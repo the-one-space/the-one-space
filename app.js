@@ -1,5 +1,5 @@
-const SUPABASE_URL = "여기에_프로젝트_URL";
-const SUPABASE_ANON_KEY = "여기에_게시_가능한_키";
+const SUPABASE_URL = "https://iluetyyhzqegupejlqhq.supabase.co/rest/v1/";
+const SUPABASE_ANON_KEY = "sb_publishable_ykDuIZGznZnQvI6Uxhy7dg_F-y8RQHB";
 
 const app = document.getElementById("app");
 let client = null;
