@@ -1,0 +1,50 @@
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:#f7f7f8;
+  color:#202124;
+  font-family:-apple-system,BlinkMacSystemFont,"Noto Sans KR","Segoe UI",sans-serif
+}
+.wrap{max-width:1120px;margin:auto;padding:28px 22px}
+.top{display:flex;justify-content:space-between;align-items:center;padding:8px 0 28px}
+.brand{font-size:24px;font-weight:800;letter-spacing:-.05em}
+.brand b{color:#d71920}
+.hero,.card,.auth{
+  background:#fff;
+  border:1px solid #eee;
+  box-shadow:0 12px 35px rgba(0,0,0,.06)
+}
+.hero{border-radius:28px;padding:42px;margin-bottom:20px}
+.hero h1{font-size:42px;letter-spacing:-.06em;margin:8px 0 12px}
+.muted{color:#777}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.card{border-radius:22px;padding:24px;min-height:145px}
+.icon{font-size:28px;margin-bottom:18px}
+.card h3{margin:0 0 8px}
+.card p{margin:0;color:#888;font-size:14px}
+.btn{
+  border:0;border-radius:12px;padding:11px 16px;
+  background:#d71920;color:#fff;font-weight:700
+}
+.btn.secondary{background:#fff;color:#222;border:1px solid #ddd}
+.auth{
+  max-width:430px;margin:70px auto;padding:34px;border-radius:24px
+}
+.auth h2{margin:18px 0 8px}
+.field{margin:14px 0}
+.field label{display:block;font-size:13px;font-weight:700;margin-bottom:7px}
+.field input,.field select{
+  width:100%;padding:13px;border:1px solid #ddd;border-radius:11px
+}
+.msg{
+  margin:14px 0;padding:11px;border-radius:10px;
+  background:#f5f5f5;font-size:14px
+}
+@media(max-width:800px){
+  .grid{grid-template-columns:1fr 1fr}
+  .hero h1{font-size:34px}
+}
+@media(max-width:520px){
+  .grid{grid-template-columns:1fr}
+  .hero{padding:28px}
+}
