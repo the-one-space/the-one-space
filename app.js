@@ -1,4 +1,4 @@
-const SUPABASE_URL = "https://iluetyyhzqegupejlqhq.supabase.co/rest/v1/";
+const SUPABASE_URL = "https://iluetyyhzqegupejlqhq.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_ykDuIZGznZnQvI6Uxhy7dg_F-y8RQHB";
 
 const app = document.getElementById("app");
