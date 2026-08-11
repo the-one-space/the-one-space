@@ -357,13 +357,161 @@ async function adminPage() {
     data: { user }
   } = await client.auth.getUser();
 
+  if (!user) {
+    authScreen();
+    return;
+  }
+
+  const { data: myProfile, error: myError } = await client
+    .from("profiles")
+    .select("*")
+    .eq("id", user.id)
+    .single();
+
+  if (myError || !myProfile || myProfile.role !== "admin") {
+    alert("관리자만 이용할 수 있습니다.");
+    return;
+  }
+
+  const { data: profiles, error } = await client
+    .from("profiles")
+    .select("*")
+    .order("name", { ascending: true });
+
+  if (error) {
+    alert("직원 목록을 불러오지 못했습니다: " + error.message);
+    return;
+  }
+
+  const pending = profiles.filter(
+    p => p.status === "pending"
+  );
+
+  const approved = profiles.filter(
+    p => p.status === "approved"
+  );
+
+  const pendingHtml = pending.length
+    ? pending.map(p => `
+        <div class="card">
+          <h3>${p.name || "이름 없음"}</h3>
+          <p>${p.position || "-"}</p>
+          <p class="muted">${p.email || ""}</p>
+
+          <button
+            class="btn"
+            onclick="changeUserStatus('${p.id}', 'approved')"
+          >
+            승인
+          </button>
+
+          <button
+            class="btn secondary"
+            onclick="changeUserStatus('${p.id}', 'rejected')"
+          >
+            거절
+          </button>
+        </div>
+      `).join("")
+    : `<p class="muted">현재 승인 대기 중인 직원이 없습니다.</p>`;
+
+  const approvedHtml = approved.length
+    ? approved.map(p => `
+        <div class="card">
+          <h3>${p.name || "이름 없음"}</h3>
+          <p>${p.position || "-"}</p>
+          <p class="muted">
+            ${p.role === "admin" ? "관리자 · " : ""}승인 완료
+          </p>
+        </div>
+      `).join("")
+    : `<p class="muted">승인된 직원이 없습니다.</p>`;
+
+  app.innerHTML = `
+    <div class="wrap">
+
+      <div class="top">
+        <div class="brand">
+          THE ONE <b>SPACE</b>
+        </div>
+
+        <button
+          class="btn secondary"
+          onclick="goHome()"
+        >
+          메인으로
+        </button>
+      </div>
+
+      <section class="hero">
+        <div class="muted">ADMIN</div>
+        <h1>직원 관리</h1>
+        <p>가입 신청을 확인하고 승인 또는 거절할 수 있습니다.</p>
+      </section>
+
+      <h2>승인 대기 (${pending.length})</h2>
+
+      <div class="grid">
+        ${pendingHtml}
+      </div>
+
+      <h2 style="margin-top:40px;">
+        승인된 직원 (${approved.length})
+      </h2>
+
+      <div class="grid">
+        ${approvedHtml}
+      </div>
+
+    </div>
+  `;
+}
+async function changeUserStatus(userId, newStatus) {
+
+  const text =
+    newStatus === "approved" ? "승인" : "거절";
+
+  if (!confirm(`이 직원을 ${text}하시겠습니까?`)) {
+    return;
+  }
+
+  const { error } = await client
+    .from("profiles")
+    .update({
+      status: newStatus
+    })
+    .eq("id", userId);
+
+  if (error) {
+    alert("처리하지 못했습니다: " + error.message);
+    return;
+  }
+
+  alert(`${text} 처리되었습니다.`);
+  adminPage();
+}
+
+async function goHome() {
+
+  const {
+    data: { user }
+  } = await client.auth.getUser();
 
   if (!user) {
     authScreen();
     return;
   }
 
+  const { data: profile } = await client
+    .from("profiles")
+    .select("*")
+    .eq("id", user.id)
+    .single();
 
+  if (profile) {
+    home(profile);
+  }
+}
   const { data: profile } =
     await client
       .from("profiles")
