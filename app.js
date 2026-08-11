@@ -76,10 +76,16 @@ async function login(){
   const emailValue = document.getElementById("email").value;
   const pwValue = document.getElementById("pw").value;
 
-  const { data, error } = await client.auth.signInWithPassword({
-    email: emailValue,
-    password: pwValue
-  });
+  const { data, error } = await client.auth.signUp({
+  email: emailValue,
+  password: pwValue,
+  options: {
+    data: {
+      name: nameValue,
+      position: positionValue
+    }
+  }
+});
 
   if(error){
     setMsg(error.message);
@@ -116,23 +122,7 @@ async function signup(){
     setMsg(error.message);
     return;
   }
-
-  const { error: profileError } = await client
-    .from("profiles")
-    .insert({
-      id: data.user.id,
-      name: nameValue,
-      email: emailValue,
-      position: positionValue,
-      role: "staff",
-      status: "pending"
-    });
-
-  if(profileError){
-    setMsg(profileError.message);
-    return;
-  }
-
+  
   setMsg("가입 신청 완료! 관리자 승인 후 로그인할 수 있습니다.");
 }
 
