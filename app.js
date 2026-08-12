@@ -1,8 +1,23 @@
 const SUPABASE_URL = "https://iluetyyhzqegupejlqhq.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_ykDuIZGznZnQvI6Uxhy7dg_F-y8RQHB";
 
+const SITE_URL = "https://the-one-space.github.io/the-one-space/";
+
 const app = document.getElementById("app");
 const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+
+// ========================================
+// 메시지
+// ========================================
+
+function setMsg(text) {
+  const el = document.getElementById("msg");
+
+  if (el) {
+    el.innerHTML = `<div class="msg">${text}</div>`;
+  }
+}
 
 
 // ========================================
@@ -12,10 +27,16 @@ const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 function authScreen() {
   app.innerHTML = `
     <div class="auth">
-      <div class="brand">THE ONE <b>SPACE</b></div>
+
+      <div class="brand">
+        THE ONE <b>SPACE</b>
+      </div>
 
       <h2>지점 전용 공간</h2>
-      <p class="muted">승인된 직원만 이용할 수 있습니다.</p>
+
+      <p class="muted">
+        승인된 직원만 이용할 수 있습니다.
+      </p>
 
       <div class="field">
         <label>이메일</label>
@@ -27,7 +48,12 @@ function authScreen() {
         <input id="pw" type="password">
       </div>
 
-      <button class="btn" onclick="login()">로그인</button>
+      <button
+        class="btn"
+        onclick="login()"
+      >
+        로그인
+      </button>
 
       <button
         class="btn secondary"
@@ -36,7 +62,15 @@ function authScreen() {
         회원가입
       </button>
 
+      <button
+        class="btn secondary"
+        onclick="forgotPassword()"
+      >
+        비밀번호 찾기
+      </button>
+
       <div id="msg"></div>
+
     </div>
   `;
 }
@@ -49,9 +83,13 @@ function authScreen() {
 function signupForm() {
   app.innerHTML = `
     <div class="auth">
-      <div class="brand">THE ONE <b>SPACE</b></div>
+
+      <div class="brand">
+        THE ONE <b>SPACE</b>
+      </div>
 
       <h2>직원 회원가입</h2>
+
       <p class="muted">
         가입 신청 후 관리자 승인이 필요합니다.
       </p>
@@ -83,7 +121,10 @@ function signupForm() {
         </select>
       </div>
 
-      <button class="btn" onclick="signup()">
+      <button
+        class="btn"
+        onclick="signup()"
+      >
         가입 신청
       </button>
 
@@ -95,21 +136,9 @@ function signupForm() {
       </button>
 
       <div id="msg"></div>
+
     </div>
   `;
-}
-
-
-// ========================================
-// 안내 메시지
-// ========================================
-
-function setMsg(text) {
-  const el = document.getElementById("msg");
-
-  if (el) {
-    el.innerHTML = `<div class="msg">${text}</div>`;
-  }
 }
 
 
@@ -221,13 +250,159 @@ async function signup() {
 
 
 // ========================================
+// 비밀번호 찾기
+// ========================================
+
+async function forgotPassword() {
+  const emailValue =
+    prompt("가입할 때 사용한 이메일을 입력해 주세요.");
+
+  if (!emailValue) {
+    return;
+  }
+
+  const { error } =
+    await client.auth.resetPasswordForEmail(
+      emailValue.trim(),
+      {
+        redirectTo: SITE_URL
+      }
+    );
+
+  if (error) {
+    alert(
+      "재설정 메일 발송에 실패했습니다.\n" +
+      error.message
+    );
+
+    return;
+  }
+
+  alert(
+    "비밀번호 재설정 메일을 보냈습니다.\n메일함을 확인해 주세요."
+  );
+}
+
+
+// ========================================
+// 새 비밀번호 화면
+// ========================================
+
+function showResetPasswordScreen() {
+  app.innerHTML = `
+    <div class="auth">
+
+      <div class="brand">
+        THE ONE <b>SPACE</b>
+      </div>
+
+      <h2>새 비밀번호 설정</h2>
+
+      <p class="muted">
+        사용할 새 비밀번호를 입력해 주세요.
+      </p>
+
+      <div class="field">
+        <label>새 비밀번호</label>
+
+        <input
+          id="newPw"
+          type="password"
+          autocomplete="new-password"
+        >
+      </div>
+
+      <div class="field">
+        <label>새 비밀번호 확인</label>
+
+        <input
+          id="newPwConfirm"
+          type="password"
+          autocomplete="new-password"
+        >
+      </div>
+
+      <button
+        class="btn"
+        onclick="updatePassword()"
+      >
+        비밀번호 변경
+      </button>
+
+      <div id="msg"></div>
+
+    </div>
+  `;
+}
+
+
+// ========================================
+// 새 비밀번호 저장
+// ========================================
+
+async function updatePassword() {
+  const newPw =
+    document.getElementById("newPw").value;
+
+  const newPwConfirm =
+    document.getElementById("newPwConfirm").value;
+
+  if (!newPw || !newPwConfirm) {
+    setMsg("새 비밀번호를 모두 입력해 주세요.");
+    return;
+  }
+
+  if (newPw !== newPwConfirm) {
+    setMsg("비밀번호가 서로 일치하지 않습니다.");
+    return;
+  }
+
+  if (newPw.length < 6) {
+    setMsg("비밀번호는 6자 이상 입력해 주세요.");
+    return;
+  }
+
+  const { error } =
+    await client.auth.updateUser({
+      password: newPw
+    });
+
+  if (error) {
+    setMsg(error.message);
+    return;
+  }
+
+  alert(
+    "비밀번호가 변경되었습니다. 다시 로그인해 주세요."
+  );
+
+  await client.auth.signOut();
+
+  history.replaceState(
+    {},
+    document.title,
+    window.location.pathname
+  );
+
+  authScreen();
+}
+
+
+// ========================================
 // 메인 화면
 // ========================================
 
 function home(profile) {
   const adminButton =
     profile.role === "admin"
-      ? `<button class="btn" onclick="adminPage()">관리자</button>`
+      ? `
+          <button
+            class="btn"
+            onclick="adminPage()"
+          >
+            관리자
+          </button>
+        `
       : "";
 
   app.innerHTML = `
@@ -240,6 +415,7 @@ function home(profile) {
         </div>
 
         <div>
+
           ${adminButton}
 
           <button
@@ -248,9 +424,11 @@ function home(profile) {
           >
             로그아웃
           </button>
+
         </div>
 
       </div>
+
 
       <section class="hero">
 
@@ -258,13 +436,16 @@ function home(profile) {
           AIA 프리미어파트너스 더원지점
         </div>
 
-        <h1>Connect. Share. Grow.</h1>
+        <h1>
+          Connect. Share. Grow.
+        </h1>
 
         <p>
           ${profile.name}님, 환영합니다.
         </p>
 
       </section>
+
 
       <div class="grid">
 
@@ -300,7 +481,7 @@ function home(profile) {
 
 
 // ========================================
-// 관리자 - 직원 관리
+// 관리자 페이지
 // ========================================
 
 async function adminPage() {
@@ -330,58 +511,63 @@ async function adminPage() {
     return;
   }
 
+
   const { data: profiles, error } =
     await client
       .from("profiles")
       .select("*")
-      .order("name", { ascending: true });
+      .order("name", {
+        ascending: true
+      });
 
   if (error) {
     alert(
-      "직원 목록을 불러오지 못했습니다: " +
+      "직원 목록을 불러오지 못했습니다.\n" +
       error.message
     );
 
     return;
   }
 
+
   const pending =
     profiles.filter(
-      profile => profile.status === "pending"
+      p => p.status === "pending"
     );
 
   const approved =
     profiles.filter(
-      profile => profile.status === "approved"
+      p => p.status === "approved"
     );
 
+
   const pendingHtml =
-    pending.length > 0
-      ? pending.map(profile => `
+    pending.length
+      ? pending.map(p => `
           <div class="card">
 
             <h3>
-              ${profile.name || "이름 없음"}
+              ${p.name || "이름 없음"}
             </h3>
 
             <p>
-              ${profile.position || "-"}
+              ${p.position || "-"}
             </p>
 
             <p class="muted">
-              ${profile.email || ""}
+              ${p.email || ""}
             </p>
 
             <button
               class="btn"
-              onclick="changeUserStatus('${profile.id}', 'approved')"
+              onclick="changeUserStatus('${p.id}', 'approved')"
             >
               승인
             </button>
 
             <button
               class="btn secondary"
-              onclick="changeUserStatus('${profile.id}', 'rejected')"
+              onclick="changeUserStatus('${p.id}', 'rejected')"
             >
               거절
             </button>
@@ -397,24 +583,28 @@ async function adminPage() {
 
 
   const approvedHtml =
-    approved.length > 0
-      ? approved.map(profile => `
+    approved.length
+      ? approved.map(p => `
           <div class="card">
 
             <h3>
-              ${profile.name || "이름 없음"}
+              ${p.name || "이름 없음"}
             </h3>
 
             <p>
-              ${profile.position || "-"}
+              ${p.position || "-"}
             </p>
 
             <p class="muted">
               ${
-                profile.role === "admin"
+                p.role === "admin"
                   ? "관리자 · 승인 완료"
                   : "승인 완료"
               }
+            </p>
+
+            <p class="muted">
+              ${p.email || ""}
             </p>
 
           </div>
@@ -445,19 +635,23 @@ async function adminPage() {
 
       </div>
 
+
       <section class="hero">
 
         <div class="muted">
           ADMIN
         </div>
 
-        <h1>직원 관리</h1>
+        <h1>
+          직원 관리
+        </h1>
 
         <p>
           가입 신청을 확인하고 승인 또는 거절할 수 있습니다.
         </p>
 
       </section>
+
 
       <h2>
         승인 대기 (${pending.length})
@@ -466,6 +660,7 @@ async function adminPage() {
       <div class="grid">
         ${pendingHtml}
       </div>
+
 
       <h2 style="margin-top:40px;">
         승인된 직원 (${approved.length})
@@ -484,18 +679,20 @@ async function adminPage() {
 // 직원 승인 / 거절
 // ========================================
 
-async function changeUserStatus(userId, newStatus) {
-  const actionText =
+async function changeUserStatus(
+  userId,
+  newStatus
+) {
+  const text =
     newStatus === "approved"
       ? "승인"
       : "거절";
 
-  const confirmed =
-    confirm(
-      `이 직원을 ${actionText}하시겠습니까?`
-    );
-
-  if (!confirmed) {
+  if (
+    !confirm(
+      `이 직원을 ${text}하시겠습니까?`
+    )
+  ) {
     return;
   }
 
@@ -509,21 +706,23 @@ async function changeUserStatus(userId, newStatus) {
 
   if (error) {
     alert(
-      "처리하지 못했습니다: " +
+      "처리하지 못했습니다.\n" +
       error.message
     );
 
     return;
   }
 
-  alert(`${actionText} 처리되었습니다.`);
+  alert(
+    `${text} 처리되었습니다.`
+  );
 
   await adminPage();
 }
 
 
 // ========================================
-// 메인으로 돌아가기
+// 메인으로
 // ========================================
 
 async function goHome() {
@@ -544,7 +743,10 @@ async function goHome() {
       .single();
 
   if (error || !profile) {
-    alert("사용자 정보를 불러오지 못했습니다.");
+    alert(
+      "사용자 정보를 불러오지 못했습니다."
+    );
+
     return;
   }
 
@@ -561,6 +763,19 @@ async function logout() {
 
   authScreen();
 }
+
+
+// ========================================
+// 비밀번호 복구 링크 감지
+// ========================================
+
+client.auth.onAuthStateChange(
+  (event) => {
+    if (event === "PASSWORD_RECOVERY") {
+      showResetPasswordScreen();
+    }
+  }
+);
 
 
 // ========================================
