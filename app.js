@@ -5,9 +5,9 @@ const app = document.getElementById("app");
 const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 
-// =========================
+// ========================================
 // 로그인 화면
-// =========================
+// ========================================
 
 function authScreen() {
   app.innerHTML = `
@@ -28,7 +28,13 @@ function authScreen() {
       </div>
 
       <button class="btn" onclick="login()">로그인</button>
-      <button class="btn secondary" onclick="signupForm()">회원가입</button>
+
+      <button
+        class="btn secondary"
+        onclick="signupForm()"
+      >
+        회원가입
+      </button>
 
       <div id="msg"></div>
     </div>
@@ -36,9 +42,9 @@ function authScreen() {
 }
 
 
-// =========================
+// ========================================
 // 회원가입 화면
-// =========================
+// ========================================
 
 function signupForm() {
   app.innerHTML = `
@@ -81,7 +87,10 @@ function signupForm() {
         가입 신청
       </button>
 
-      <button class="btn secondary" onclick="authScreen()">
+      <button
+        class="btn secondary"
+        onclick="authScreen()"
+      >
         로그인으로 돌아가기
       </button>
 
@@ -91,39 +100,34 @@ function signupForm() {
 }
 
 
-// =========================
-// 메시지 표시
-// =========================
+// ========================================
+// 안내 메시지
+// ========================================
 
 function setMsg(text) {
   const el = document.getElementById("msg");
 
   if (el) {
-    el.innerHTML = `
-      <div class="msg">${text}</div>
-    `;
+    el.innerHTML = `<div class="msg">${text}</div>`;
   }
 }
 
 
-// =========================
+// ========================================
 // 로그인
-// =========================
+// ========================================
 
 async function login() {
-
   const emailValue =
     document.getElementById("email").value.trim();
 
   const pwValue =
     document.getElementById("pw").value;
 
-
   if (!emailValue || !pwValue) {
     setMsg("이메일과 비밀번호를 입력해 주세요.");
     return;
   }
-
 
   const { data, error } =
     await client.auth.signInWithPassword({
@@ -131,12 +135,10 @@ async function login() {
       password: pwValue
     });
 
-
   if (error) {
     setMsg(error.message);
     return;
   }
-
 
   const { data: profile, error: profileError } =
     await client
@@ -145,9 +147,7 @@ async function login() {
       .eq("id", data.user.id)
       .single();
 
-
   if (profileError || !profile) {
-
     await client.auth.signOut();
 
     setMsg(
@@ -157,29 +157,25 @@ async function login() {
     return;
   }
 
-
   if (profile.status !== "approved") {
-
     await client.auth.signOut();
 
     setMsg(
-      "가입 신청이 완료되었습니다. 관리자 승인 후 이용할 수 있습니다."
+      "관리자 승인 후 이용할 수 있습니다."
     );
 
     return;
   }
 
-
   home(profile);
 }
 
 
-// =========================
+// ========================================
 // 회원가입
-// =========================
+// ========================================
 
 async function signup() {
-
   const nameValue =
     document.getElementById("name").value.trim();
 
@@ -192,9 +188,7 @@ async function signup() {
   const positionValue =
     document.getElementById("position").value;
 
-
   if (!nameValue || !emailValue || !pwValue) {
-
     setMsg(
       "이름, 이메일, 비밀번호를 모두 입력해 주세요."
     );
@@ -202,31 +196,23 @@ async function signup() {
     return;
   }
 
-
-  const { data, error } =
+  const { error } =
     await client.auth.signUp({
-
       email: emailValue,
-
       password: pwValue,
 
       options: {
-
         data: {
           name: nameValue,
           position: positionValue
         }
-
       }
-
     });
-
 
   if (error) {
     setMsg(error.message);
     return;
   }
-
 
   setMsg(
     "가입 신청 완료! 관리자 승인 후 로그인할 수 있습니다."
@@ -234,20 +220,17 @@ async function signup() {
 }
 
 
-// =========================
+// ========================================
 // 메인 화면
-// =========================
+// ========================================
 
 function home(profile) {
-
   const adminButton =
     profile.role === "admin"
       ? `<button class="btn" onclick="adminPage()">관리자</button>`
       : "";
 
-
   app.innerHTML = `
-
     <div class="wrap">
 
       <div class="top">
@@ -269,16 +252,13 @@ function home(profile) {
 
       </div>
 
-
       <section class="hero">
 
         <div class="muted">
           AIA 프리미어파트너스 더원지점
         </div>
 
-        <h1>
-          Connect. Share. Grow.
-        </h1>
+        <h1>Connect. Share. Grow.</h1>
 
         <p>
           ${profile.name}님, 환영합니다.
@@ -286,58 +266,30 @@ function home(profile) {
 
       </section>
 
-
       <div class="grid">
 
         <div class="card">
-
           <div class="icon">🎙️</div>
-
           <h3>녹취록</h3>
-
-          <p>
-            상담 녹취와 내용을 확인합니다.
-          </p>
-
+          <p>상담 녹취와 내용을 확인합니다.</p>
         </div>
 
-
         <div class="card">
-
           <div class="icon">📅</div>
-
           <h3>스케줄</h3>
-
-          <p>
-            지점 일정을 확인합니다.
-          </p>
-
+          <p>지점 일정을 확인합니다.</p>
         </div>
 
-
         <div class="card">
-
           <div class="icon">📢</div>
-
           <h3>공지사항</h3>
-
-          <p>
-            지점 공지를 확인합니다.
-          </p>
-
+          <p>지점 공지를 확인합니다.</p>
         </div>
 
-
         <div class="card">
-
           <div class="icon">📁</div>
-
           <h3>자료실</h3>
-
-          <p>
-            공유 자료를 확인합니다.
-          </p>
-
+          <p>공유 자료를 확인합니다.</p>
         </div>
 
       </div>
@@ -347,12 +299,11 @@ function home(profile) {
 }
 
 
-// =========================
-// 관리자 화면
-// =========================
+// ========================================
+// 관리자 - 직원 관리
+// ========================================
 
 async function adminPage() {
-
   const {
     data: { user }
   } = await client.auth.getUser();
@@ -362,75 +313,125 @@ async function adminPage() {
     return;
   }
 
-  const { data: myProfile, error: myError } = await client
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single();
+  const { data: myProfile, error: myError } =
+    await client
+      .from("profiles")
+      .select("*")
+      .eq("id", user.id)
+      .single();
 
-  if (myError || !myProfile || myProfile.role !== "admin") {
+  if (
+    myError ||
+    !myProfile ||
+    myProfile.role !== "admin" ||
+    myProfile.status !== "approved"
+  ) {
     alert("관리자만 이용할 수 있습니다.");
     return;
   }
 
-  const { data: profiles, error } = await client
-    .from("profiles")
-    .select("*")
-    .order("name", { ascending: true });
+  const { data: profiles, error } =
+    await client
+      .from("profiles")
+      .select("*")
+      .order("name", { ascending: true });
 
   if (error) {
-    alert("직원 목록을 불러오지 못했습니다: " + error.message);
+    alert(
+      "직원 목록을 불러오지 못했습니다: " +
+      error.message
+    );
+
     return;
   }
 
-  const pending = profiles.filter(
-    p => p.status === "pending"
-  );
+  const pending =
+    profiles.filter(
+      profile => profile.status === "pending"
+    );
 
-  const approved = profiles.filter(
-    p => p.status === "approved"
-  );
+  const approved =
+    profiles.filter(
+      profile => profile.status === "approved"
+    );
 
-  const pendingHtml = pending.length
-    ? pending.map(p => `
-        <div class="card">
-          <h3>${p.name || "이름 없음"}</h3>
-          <p>${p.position || "-"}</p>
-          <p class="muted">${p.email || ""}</p>
+  const pendingHtml =
+    pending.length > 0
+      ? pending.map(profile => `
+          <div class="card">
 
-          <button
-            class="btn"
-            onclick="changeUserStatus('${p.id}', 'approved')"
-          >
-            승인
-          </button>
+            <h3>
+              ${profile.name || "이름 없음"}
+            </h3>
 
-          <button
-            class="btn secondary"
-            onclick="changeUserStatus('${p.id}', 'rejected')"
-          >
-            거절
-          </button>
-        </div>
-      `).join("")
-    : `<p class="muted">현재 승인 대기 중인 직원이 없습니다.</p>`;
+            <p>
+              ${profile.position || "-"}
+            </p>
 
-  const approvedHtml = approved.length
-    ? approved.map(p => `
-        <div class="card">
-          <h3>${p.name || "이름 없음"}</h3>
-          <p>${p.position || "-"}</p>
+            <p class="muted">
+              ${profile.email || ""}
+            </p>
+
+            <button
+              class="btn"
+              onclick="changeUserStatus('${profile.id}', 'approved')"
+            >
+              승인
+            </button>
+
+            <button
+              class="btn secondary"
+              onclick="changeUserStatus('${profile.id}', 'rejected')"
+            >
+              거절
+            </button>
+
+          </div>
+        `).join("")
+
+      : `
           <p class="muted">
-            ${p.role === "admin" ? "관리자 · " : ""}승인 완료
+            현재 승인 대기 중인 직원이 없습니다.
           </p>
-        </div>
-      `).join("")
-    : `<p class="muted">승인된 직원이 없습니다.</p>`;
+        `;
+
+
+  const approvedHtml =
+    approved.length > 0
+      ? approved.map(profile => `
+          <div class="card">
+
+            <h3>
+              ${profile.name || "이름 없음"}
+            </h3>
+
+            <p>
+              ${profile.position || "-"}
+            </p>
+
+            <p class="muted">
+              ${
+                profile.role === "admin"
+                  ? "관리자 · 승인 완료"
+                  : "승인 완료"
+              }
+            </p>
+
+          </div>
+        `).join("")
+
+      : `
+          <p class="muted">
+            승인된 직원이 없습니다.
+          </p>
+        `;
+
 
   app.innerHTML = `
     <div class="wrap">
 
       <div class="top">
+
         <div class="brand">
           THE ONE <b>SPACE</b>
         </div>
@@ -441,15 +442,26 @@ async function adminPage() {
         >
           메인으로
         </button>
+
       </div>
 
       <section class="hero">
-        <div class="muted">ADMIN</div>
+
+        <div class="muted">
+          ADMIN
+        </div>
+
         <h1>직원 관리</h1>
-        <p>가입 신청을 확인하고 승인 또는 거절할 수 있습니다.</p>
+
+        <p>
+          가입 신청을 확인하고 승인 또는 거절할 수 있습니다.
+        </p>
+
       </section>
 
-      <h2>승인 대기 (${pending.length})</h2>
+      <h2>
+        승인 대기 (${pending.length})
+      </h2>
 
       <div class="grid">
         ${pendingHtml}
@@ -466,33 +478,55 @@ async function adminPage() {
     </div>
   `;
 }
+
+
+// ========================================
+// 직원 승인 / 거절
+// ========================================
+
 async function changeUserStatus(userId, newStatus) {
+  const actionText =
+    newStatus === "approved"
+      ? "승인"
+      : "거절";
 
-  const text =
-    newStatus === "approved" ? "승인" : "거절";
+  const confirmed =
+    confirm(
+      `이 직원을 ${actionText}하시겠습니까?`
+    );
 
-  if (!confirm(`이 직원을 ${text}하시겠습니까?`)) {
+  if (!confirmed) {
     return;
   }
 
-  const { error } = await client
-    .from("profiles")
-    .update({
-      status: newStatus
-    })
-    .eq("id", userId);
+  const { error } =
+    await client
+      .from("profiles")
+      .update({
+        status: newStatus
+      })
+      .eq("id", userId);
 
   if (error) {
-    alert("처리하지 못했습니다: " + error.message);
+    alert(
+      "처리하지 못했습니다: " +
+      error.message
+    );
+
     return;
   }
 
-  alert(`${text} 처리되었습니다.`);
-  adminPage();
+  alert(`${actionText} 처리되었습니다.`);
+
+  await adminPage();
 }
 
-async function goHome() {
 
+// ========================================
+// 메인으로 돌아가기
+// ========================================
+
+async function goHome() {
   const {
     data: { user }
   } = await client.auth.getUser();
@@ -502,124 +536,66 @@ async function goHome() {
     return;
   }
 
-  const { data: profile } = await client
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single();
-
-  if (profile) {
-    home(profile);
-  }
-}
-  const { data: profile } =
+  const { data: profile, error } =
     await client
       .from("profiles")
       .select("*")
       .eq("id", user.id)
       .single();
 
-
-  if (!profile || profile.role !== "admin") {
-
-    setMsg("관리자만 이용할 수 있습니다.");
-
+  if (error || !profile) {
+    alert("사용자 정보를 불러오지 못했습니다.");
     return;
   }
 
-
-  app.innerHTML = `
-
-    <div class="wrap">
-
-      <div class="top">
-
-        <div class="brand">
-          THE ONE <b>SPACE</b>
-        </div>
-
-        <button
-          class="btn secondary"
-          onclick="home(${JSON.stringify(profile).replace(/"/g, '&quot;')})"
-        >
-          메인으로
-        </button>
-
-      </div>
-
-
-      <section class="hero">
-
-        <div class="muted">
-          ADMIN
-        </div>
-
-        <h1>
-          관리자 페이지
-        </h1>
-
-        <p>
-          직원 승인 및 권한 관리 기능을 연결할 공간입니다.
-        </p>
-
-      </section>
-
-    </div>
-  `;
+  home(profile);
 }
 
 
-// =========================
+// ========================================
 // 로그아웃
-// =========================
+// ========================================
 
 async function logout() {
-
   await client.auth.signOut();
 
   authScreen();
 }
 
 
-// =========================
-// 처음 사이트를 열었을 때
-// =========================
+// ========================================
+// 사이트 시작
+// ========================================
 
 async function start() {
-
   const {
     data: { session }
   } = await client.auth.getSession();
-
 
   if (!session) {
     authScreen();
     return;
   }
 
-
-  const { data: profile } =
+  const { data: profile, error } =
     await client
       .from("profiles")
       .select("*")
       .eq("id", session.user.id)
       .single();
 
-
   if (
+    !error &&
     profile &&
     profile.status === "approved"
   ) {
-
     home(profile);
-
-  } else {
-
-    await client.auth.signOut();
-
-    authScreen();
-
+    return;
   }
+
+  await client.auth.signOut();
+
+  authScreen();
 }
 
 
