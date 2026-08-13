@@ -13,7 +13,6 @@ const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 function setMsg(text) {
   const el = document.getElementById("msg");
-
   if (el) {
     el.innerHTML = `<div class="msg">${text}</div>`;
   }
@@ -33,9 +32,7 @@ async function getCurrentProfile() {
     data: { user }
   } = await client.auth.getUser();
 
-  if (!user) {
-    return null;
-  }
+  if (!user) return null;
 
   const { data: profile } = await client
     .from("profiles")
@@ -54,13 +51,9 @@ async function getCurrentProfile() {
 function authScreen() {
   app.innerHTML = `
     <div class="auth">
-
-      <div class="brand">
-        THE ONE <b>SPACE</b>
-      </div>
+      <div class="brand">THE ONE <b>SPACE</b></div>
 
       <h2>지점 전용 공간</h2>
-
       <p class="muted">
         승인된 직원만 이용할 수 있습니다.
       </p>
@@ -79,38 +72,28 @@ function authScreen() {
         로그인
       </button>
 
-      <button
-        class="btn secondary"
-        onclick="signupForm()"
-      >
+      <button class="btn secondary" onclick="signupForm()">
         회원가입
       </button>
 
-      <button
-        class="btn secondary"
-        onclick="forgotPassword()"
-      >
+      <button class="btn secondary" onclick="forgotPassword()">
         비밀번호 찾기
       </button>
 
       <div id="msg"></div>
-
     </div>
   `;
 }
 
 
 // ========================================
-// 회원가입
+// 회원가입 화면
 // ========================================
 
 function signupForm() {
   app.innerHTML = `
     <div class="auth">
-
-      <div class="brand">
-        THE ONE <b>SPACE</b>
-      </div>
+      <div class="brand">THE ONE <b>SPACE</b></div>
 
       <h2>직원 회원가입</h2>
 
@@ -149,15 +132,11 @@ function signupForm() {
         가입 신청
       </button>
 
-      <button
-        class="btn secondary"
-        onclick="authScreen()"
-      >
+      <button class="btn secondary" onclick="authScreen()">
         로그인으로 돌아가기
       </button>
 
       <div id="msg"></div>
-
     </div>
   `;
 }
@@ -199,19 +178,13 @@ async function login() {
 
   if (profileError || !profile) {
     await client.auth.signOut();
-
-    setMsg(
-      "사용자 정보를 확인할 수 없습니다. 관리자에게 문의해 주세요."
-    );
+    setMsg("사용자 정보를 확인할 수 없습니다.");
     return;
   }
 
   if (profile.status !== "approved") {
     await client.auth.signOut();
-
-    setMsg(
-      "관리자 승인 후 이용할 수 있습니다."
-    );
+    setMsg("관리자 승인 후 이용할 수 있습니다.");
     return;
   }
 
@@ -220,7 +193,7 @@ async function login() {
 
 
 // ========================================
-// 회원가입 처리
+// 회원가입
 // ========================================
 
 async function signup() {
@@ -237,9 +210,7 @@ async function signup() {
     document.getElementById("position").value;
 
   if (!nameValue || !emailValue || !pwValue) {
-    setMsg(
-      "이름, 이메일, 비밀번호를 모두 입력해 주세요."
-    );
+    setMsg("이름, 이메일, 비밀번호를 모두 입력해 주세요.");
     return;
   }
 
@@ -273,13 +244,9 @@ async function signup() {
 
 async function forgotPassword() {
   const emailValue =
-    prompt(
-      "가입할 때 사용한 이메일을 입력해 주세요."
-    );
+    prompt("가입할 때 사용한 이메일을 입력해 주세요.");
 
-  if (!emailValue) {
-    return;
-  }
+  if (!emailValue) return;
 
   const { error } =
     await client.auth.resetPasswordForEmail(
@@ -304,56 +271,34 @@ async function forgotPassword() {
 
 
 // ========================================
-// 새 비밀번호
+// 새 비밀번호 화면
 // ========================================
 
 function showResetPasswordScreen() {
   app.innerHTML = `
     <div class="auth">
-
-      <div class="brand">
-        THE ONE <b>SPACE</b>
-      </div>
+      <div class="brand">THE ONE <b>SPACE</b></div>
 
       <h2>새 비밀번호 설정</h2>
 
-      <p class="muted">
-        사용할 새 비밀번호를 입력해 주세요.
-      </p>
-
       <div class="field">
         <label>새 비밀번호</label>
-
-        <input
-          id="newPw"
-          type="password"
-          autocomplete="new-password"
-        >
+        <input id="newPw" type="password">
       </div>
 
       <div class="field">
         <label>새 비밀번호 확인</label>
-
-        <input
-          id="newPwConfirm"
-          type="password"
-          autocomplete="new-password"
-        >
+        <input id="newPwConfirm" type="password">
       </div>
 
-      <button
-        class="btn"
-        onclick="updatePassword()"
-      >
+      <button class="btn" onclick="updatePassword()">
         비밀번호 변경
       </button>
 
       <div id="msg"></div>
-
     </div>
   `;
 }
-
 
 async function updatePassword() {
   const newPw =
@@ -363,23 +308,17 @@ async function updatePassword() {
     document.getElementById("newPwConfirm").value;
 
   if (!newPw || !newPwConfirm) {
-    setMsg(
-      "새 비밀번호를 모두 입력해 주세요."
-    );
+    setMsg("새 비밀번호를 모두 입력해 주세요.");
     return;
   }
 
   if (newPw !== newPwConfirm) {
-    setMsg(
-      "비밀번호가 서로 일치하지 않습니다."
-    );
+    setMsg("비밀번호가 서로 일치하지 않습니다.");
     return;
   }
 
   if (newPw.length < 6) {
-    setMsg(
-      "비밀번호는 6자 이상 입력해 주세요."
-    );
+    setMsg("비밀번호는 6자 이상 입력해 주세요.");
     return;
   }
 
@@ -393,9 +332,7 @@ async function updatePassword() {
     return;
   }
 
-  alert(
-    "비밀번호가 변경되었습니다. 다시 로그인해 주세요."
-  );
+  alert("비밀번호가 변경되었습니다.");
 
   await client.auth.signOut();
 
@@ -417,13 +354,10 @@ function home(profile) {
   const adminButton =
     profile.role === "admin"
       ? `
-          <button
-            class="btn"
-            onclick="adminPage()"
-          >
-            관리자
-          </button>
-        `
+        <button class="btn" onclick="adminPage()">
+          관리자
+        </button>
+      `
       : "";
 
   app.innerHTML = `
@@ -436,7 +370,6 @@ function home(profile) {
         </div>
 
         <div>
-
           ${adminButton}
 
           <button
@@ -445,7 +378,6 @@ function home(profile) {
           >
             로그아웃
           </button>
-
         </div>
 
       </div>
@@ -457,9 +389,7 @@ function home(profile) {
           AIA 프리미어파트너스 더원지점
         </div>
 
-        <h1>
-          Connect. Share. Grow.
-        </h1>
+        <h1>Connect. Share. Grow.</h1>
 
         <p>
           ${escapeHtml(profile.name)}님, 환영합니다.
@@ -476,45 +406,29 @@ function home(profile) {
           style="cursor:pointer;"
         >
           <div class="icon">🎙️</div>
-
           <h3>녹취록</h3>
-
-          <p>
-            상담 녹취와 내용을 확인합니다.
-          </p>
+          <p>상담 녹취와 내용을 확인합니다.</p>
         </div>
 
 
         <div class="card">
           <div class="icon">📅</div>
-
           <h3>스케줄</h3>
-
-          <p>
-            지점 일정을 확인합니다.
-          </p>
+          <p>지점 일정을 확인합니다.</p>
         </div>
 
 
         <div class="card">
           <div class="icon">📢</div>
-
           <h3>공지사항</h3>
-
-          <p>
-            지점 공지를 확인합니다.
-          </p>
+          <p>지점 공지를 확인합니다.</p>
         </div>
 
 
         <div class="card">
           <div class="icon">📁</div>
-
           <h3>자료실</h3>
-
-          <p>
-            공유 자료를 확인합니다.
-          </p>
+          <p>공유 자료를 확인합니다.</p>
         </div>
 
       </div>
@@ -529,46 +443,29 @@ function home(profile) {
 // ========================================
 
 async function recordingsPage() {
-  const profile =
-    await getCurrentProfile();
+  const profile = await getCurrentProfile();
 
-  if (
-    !profile ||
-    profile.status !== "approved"
-  ) {
-    alert("로그인이 필요합니다.");
+  if (!profile || profile.status !== "approved") {
     authScreen();
     return;
   }
-
-  app.innerHTML = `
-    <div class="wrap">
-      <p class="muted">
-        녹취록을 불러오는 중입니다...
-      </p>
-    </div>
-  `;
 
   const { data: recordings, error } =
     await client
       .from("recordings")
       .select("*")
-      .order(
-        "consultation_date",
-        { ascending: false }
-      )
-      .order(
-        "created_at",
-        { ascending: false }
-      );
+      .order("consultation_date", {
+        ascending: false
+      })
+      .order("created_at", {
+        ascending: false
+      });
 
   if (error) {
     alert(
       "녹취록을 불러오지 못했습니다.\n" +
       error.message
     );
-
-    await goHome();
     return;
   }
 
@@ -580,7 +477,6 @@ async function recordingsPage() {
             onclick="recordingDetail('${item.id}')"
             style="cursor:pointer;"
           >
-
             <div class="muted">
               ${escapeHtml(item.consultation_date)}
             </div>
@@ -590,33 +486,29 @@ async function recordingsPage() {
             </h3>
 
             <p>
-              본인:
-              ${escapeHtml(item.owner_name)}
+              본인: ${escapeHtml(item.owner_name)}
             </p>
 
             ${
               item.companion_name
                 ? `
-                    <p>
-                      동행자:
-                      ${escapeHtml(item.companion_name)}
-                    </p>
-                  `
+                  <p>
+                    동행자:
+                    ${escapeHtml(item.companion_name)}
+                  </p>
+                `
                 : ""
             }
 
           </div>
         `).join("")
-
       : `
-          <div class="card">
-
-            <p class="muted">
-              아직 등록된 녹취록이 없습니다.
-            </p>
-
-          </div>
-        `;
+        <div class="card">
+          <p class="muted">
+            아직 등록된 녹취록이 없습니다.
+          </p>
+        </div>
+      `;
 
   app.innerHTML = `
     <div class="wrap">
@@ -669,12 +561,11 @@ async function recordingsPage() {
 
 
 // ========================================
-// 새 녹취록
+// 새 녹취록 등록
 // ========================================
 
 async function newRecordingForm() {
-  const profile =
-    await getCurrentProfile();
+  const profile = await getCurrentProfile();
 
   if (!profile) {
     authScreen();
@@ -682,9 +573,7 @@ async function newRecordingForm() {
   }
 
   const today =
-    new Date()
-      .toISOString()
-      .slice(0, 10);
+    new Date().toISOString().slice(0, 10);
 
   app.innerHTML = `
     <div class="wrap">
@@ -706,15 +595,11 @@ async function newRecordingForm() {
 
 
       <section class="hero">
-
         <div class="muted">
           NEW RECORDING
         </div>
 
-        <h1>
-          새 녹취록 등록
-        </h1>
-
+        <h1>새 녹취록 등록</h1>
       </section>
 
 
@@ -724,89 +609,63 @@ async function newRecordingForm() {
       >
 
         <div class="field">
-
-          <label>
-            상담 날짜
-          </label>
+          <label>상담 날짜</label>
 
           <input
             id="consultationDate"
             type="date"
             value="${today}"
           >
-
         </div>
 
 
         <div class="field">
-
-          <label>
-            간단 상담 내용
-          </label>
+          <label>간단 상담 내용</label>
 
           <input
             id="shortTitle"
             type="text"
             placeholder="예: 종신보험 상담"
           >
-
         </div>
 
 
         <div class="field">
-
-          <label>
-            상세 내용
-          </label>
+          <label>상세 내용</label>
 
           <textarea
             id="details"
             rows="6"
+            style="width:100%;box-sizing:border-box;"
             placeholder="상담 내용을 입력해 주세요."
-            style="
-              width:100%;
-              box-sizing:border-box;
-            "
           ></textarea>
-
         </div>
 
 
         <div class="field">
-
-          <label>
-            본인
-          </label>
+          <label>본인</label>
 
           <input
             id="ownerName"
             type="text"
             value="${escapeHtml(profile.name || "")}"
           >
-
         </div>
 
 
         <div class="field">
-
-          <label>
-            동행자 (선택)
-          </label>
+          <label>동행자 (선택)</label>
 
           <input
             id="companionName"
             type="text"
             placeholder="동행자가 있을 경우 입력"
           >
-
         </div>
 
 
         <div class="field">
-
-          <label>
-            녹취 파일
-          </label>
+          <label>녹취 파일</label>
 
           <input
             id="recordingFiles"
@@ -818,7 +677,6 @@ async function newRecordingForm() {
           <p class="muted">
             여러 파일을 한 번에 선택할 수 있습니다.
           </p>
-
         </div>
 
 
@@ -845,67 +703,43 @@ async function newRecordingForm() {
 
 async function saveRecording() {
   const consultationDate =
-    document
-      .getElementById("consultationDate")
-      .value;
+    document.getElementById("consultationDate").value;
 
   const shortTitle =
-    document
-      .getElementById("shortTitle")
-      .value
-      .trim();
+    document.getElementById("shortTitle").value.trim();
 
   const details =
-    document
-      .getElementById("details")
-      .value
-      .trim();
+    document.getElementById("details").value.trim();
 
   const ownerName =
-    document
-      .getElementById("ownerName")
-      .value
-      .trim();
+    document.getElementById("ownerName").value.trim();
 
   const companionName =
-    document
-      .getElementById("companionName")
-      .value
-      .trim();
+    document.getElementById("companionName").value.trim();
 
   const files =
     Array.from(
-      document
-        .getElementById("recordingFiles")
-        .files
+      document.getElementById("recordingFiles").files
     );
 
 
   if (!consultationDate) {
-    setMsg(
-      "상담 날짜를 선택해 주세요."
-    );
+    setMsg("상담 날짜를 선택해 주세요.");
     return;
   }
 
   if (!shortTitle) {
-    setMsg(
-      "간단 상담 내용을 입력해 주세요."
-    );
+    setMsg("간단 상담 내용을 입력해 주세요.");
     return;
   }
 
   if (!ownerName) {
-    setMsg(
-      "본인을 입력해 주세요."
-    );
+    setMsg("본인을 입력해 주세요.");
     return;
   }
 
   if (files.length === 0) {
-    setMsg(
-      "녹취 파일을 한 개 이상 선택해 주세요."
-    );
+    setMsg("녹취 파일을 한 개 이상 선택해 주세요.");
     return;
   }
 
@@ -915,35 +749,134 @@ async function saveRecording() {
   } = await client.auth.getUser();
 
   if (!user) {
-    setMsg(
-      "로그인이 필요합니다."
-    );
+    setMsg("로그인이 필요합니다.");
     return;
   }
 
 
   const uploadBtn =
-    document.getElementById(
-      "uploadBtn"
-    );
+    document.getElementById("uploadBtn");
 
   uploadBtn.disabled = true;
-  uploadBtn.textContent =
-    "업로드 중...";
+  uploadBtn.textContent = "업로드 중...";
 
 
-  setMsg(
-    `녹취록 정보를 저장하고 있습니다. (${files.length}개 파일)`
-  );
+  // 녹취록 ID를 미리 생성
+  const recordingId =
+    crypto.randomUUID();
+
+  const uploadedFiles = [];
+
+
+  // =====================================
+  // 1. 실제 음성파일부터 Storage에 업로드
+  // =====================================
+
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+
+    setMsg(
+      `실제 파일 업로드 중... ${i + 1} / ${files.length}`
+    );
+
+
+    let extension = "";
+
+    if (file.name.includes(".")) {
+      const rawExtension =
+        file.name
+          .split(".")
+          .pop()
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g, "");
+
+      if (rawExtension) {
+        extension = "." + rawExtension;
+      }
+    }
+
+
+    const storageFileName =
+      `${crypto.randomUUID()}${extension}`;
+
+
+    const filePath =
+      `${user.id}/${recordingId}/${storageFileName}`;
+
+
+    const {
+      data: uploadData,
+      error: uploadError
+    } =
+      await client.storage
+        .from("recordings")
+        .upload(
+          filePath,
+          file,
+          {
+            cacheControl: "3600",
+            upsert: false,
+            contentType:
+              file.type ||
+              "application/octet-stream"
+          }
+        );
+
+
+    if (uploadError) {
+      uploadBtn.disabled = false;
+      uploadBtn.textContent = "업로드";
+
+      setMsg(
+        "파일 업로드 실패:<br>" +
+        escapeHtml(file.name) +
+        "<br><br>" +
+        escapeHtml(uploadError.message)
+      );
+
+      console.error(
+        "Storage upload error:",
+        uploadError
+      );
+
+      return;
+    }
+
+
+    if (!uploadData?.path) {
+      uploadBtn.disabled = false;
+      uploadBtn.textContent = "업로드";
+
+      setMsg(
+        "파일 업로드 결과를 확인할 수 없습니다."
+      );
+
+      return;
+    }
+
+
+    uploadedFiles.push({
+      file_name: file.name,
+      file_path: uploadData.path
+    });
+  }
+
+
+  // =====================================
+  // 2. 파일이 모두 올라간 뒤 녹취록 저장
+  // =====================================
+
+  setMsg("녹취록 정보를 저장하고 있습니다...");
 
 
   const {
-    data: recording,
     error: recordingError
   } =
     await client
       .from("recordings")
       .insert({
+        id: recordingId,
+
         consultation_date:
           consultationDate,
 
@@ -961,148 +894,65 @@ async function saveRecording() {
 
         uploaded_by:
           user.id
-      })
-      .select()
-      .single();
+      });
 
 
   if (recordingError) {
     uploadBtn.disabled = false;
-    uploadBtn.textContent =
-      "업로드";
+    uploadBtn.textContent = "업로드";
 
     setMsg(
-      "녹취록 저장 실패: " +
-      recordingError.message
+      "녹취록 정보 저장 실패:<br>" +
+      escapeHtml(recordingError.message)
     );
 
     return;
   }
 
 
-  for (
-    let i = 0;
-    i < files.length;
-    i++
-  ) {
-    const file =
-      files[i];
+  // =====================================
+  // 3. 파일 목록 DB에 저장
+  // =====================================
 
+  const fileRows =
+    uploadedFiles.map(file => ({
+      recording_id:
+        recordingId,
+
+      file_name:
+        file.file_name,
+
+      file_path:
+        file.file_path,
+
+      uploaded_by:
+        user.id
+    }));
+
+
+  const {
+    error: fileInfoError
+  } =
+    await client
+      .from("recording_files")
+      .insert(fileRows);
+
+
+  if (fileInfoError) {
+    uploadBtn.disabled = false;
+    uploadBtn.textContent = "업로드";
 
     setMsg(
-      `파일 업로드 중... ${i + 1} / ${files.length}`
+      "파일 정보 저장 실패:<br>" +
+      escapeHtml(fileInfoError.message)
     );
 
-
-    // ------------------------------------
-    // 중요!
-    // 원본 파일명은 DB에 그대로 보관하고
-    // Storage에는 안전한 영문 파일명으로 저장
-    // ------------------------------------
-
-    let extension = "";
-
-    if (
-      file.name &&
-      file.name.includes(".")
-    ) {
-      const rawExtension =
-        file.name
-          .split(".")
-          .pop()
-          .toLowerCase();
-
-      const cleanExtension =
-        rawExtension.replace(
-          /[^a-z0-9]/g,
-          ""
-        );
-
-      if (cleanExtension) {
-        extension =
-          "." + cleanExtension;
-      }
-    }
-
-
-    const storageFileName =
-      `recording_${Date.now()}_${i}${extension}`;
-
-
-    const filePath =
-      `${user.id}/${recording.id}/${storageFileName}`;
-
-
-    const { error: uploadError } =
-      await client.storage
-        .from("recordings")
-        .upload(
-          filePath,
-          file,
-          {
-            cacheControl: "3600",
-            upsert: false,
-            contentType:
-              file.type ||
-              undefined
-          }
-        );
-
-
-    if (uploadError) {
-      uploadBtn.disabled = false;
-
-      uploadBtn.textContent =
-        "업로드";
-
-      setMsg(
-        `파일 업로드 실패: ${escapeHtml(file.name)}<br>${escapeHtml(uploadError.message)}`
-      );
-
-      return;
-    }
-
-
-    const {
-      error: fileInfoError
-    } =
-      await client
-        .from("recording_files")
-        .insert({
-          recording_id:
-            recording.id,
-
-          // 화면에 보여줄 이름은
-          // 원본 한글 파일명 그대로
-          file_name:
-            file.name,
-
-          file_path:
-            filePath,
-
-          uploaded_by:
-            user.id
-        });
-
-
-    if (fileInfoError) {
-      uploadBtn.disabled = false;
-
-      uploadBtn.textContent =
-        "업로드";
-
-      setMsg(
-        "파일 정보 저장 실패: " +
-        fileInfoError.message
-      );
-
-      return;
-    }
+    return;
   }
 
 
   alert(
-    `녹취록 등록 완료!\n${files.length}개 파일이 업로드되었습니다.`
+    `녹취록 등록 완료!\n${uploadedFiles.length}개 파일이 저장되었습니다.`
   );
 
   await recordingsPage();
@@ -1113,18 +963,14 @@ async function saveRecording() {
 // 녹취록 상세
 // ========================================
 
-async function recordingDetail(
-  recordingId
-) {
-  app.innerHTML = `
-    <div class="wrap">
+async function recordingDetail(recordingId) {
+  const profile =
+    await getCurrentProfile();
 
-      <p class="muted">
-        녹취록을 불러오는 중입니다...
-      </p>
-
-    </div>
-  `;
+  if (!profile) {
+    authScreen();
+    return;
+  }
 
 
   const {
@@ -1134,23 +980,13 @@ async function recordingDetail(
     await client
       .from("recordings")
       .select("*")
-      .eq(
-        "id",
-        recordingId
-      )
+      .eq("id", recordingId)
       .single();
 
 
-  if (
-    error ||
-    !recording
-  ) {
-    alert(
-      "녹취록을 불러오지 못했습니다."
-    );
-
+  if (error || !recording) {
+    alert("녹취록을 불러오지 못했습니다.");
     await recordingsPage();
-
     return;
   }
 
@@ -1162,16 +998,10 @@ async function recordingDetail(
     await client
       .from("recording_files")
       .select("*")
-      .eq(
-        "recording_id",
-        recordingId
-      )
-      .order(
-        "created_at",
-        {
-          ascending: true
-        }
-      );
+      .eq("recording_id", recordingId)
+      .order("created_at", {
+        ascending: true
+      });
 
 
   if (filesError) {
@@ -1180,41 +1010,51 @@ async function recordingDetail(
       filesError.message
     );
 
-    await recordingsPage();
-
     return;
   }
 
 
   const filesHtml =
     files && files.length
-      ? files.map(
-          (file, index) => `
-            <div class="card">
+      ? files.map((file, index) => `
+          <div class="card">
 
-              <p>
-                <b>
-                  ${index + 1}.
-                  ${escapeHtml(file.file_name)}
-                </b>
-              </p>
+            <p>
+              <b>
+                ${index + 1}.
+                ${escapeHtml(file.file_name)}
+              </b>
+            </p>
 
-              <button
-                class="btn"
-                onclick="openRecordingFile('${file.file_path}')"
-              >
-                녹취 듣기
-              </button>
+            <button
+              class="btn"
+              onclick="openRecordingFile('${file.file_path}')"
+            >
+              녹취 듣기
+            </button>
 
-            </div>
-          `
-        ).join("")
-
+          </div>
+        `).join("")
       : `
+        <div class="card">
           <p class="muted">
             등록된 파일이 없습니다.
           </p>
-        `;
+        </div>
+      `;
+
+
+  const deleteButton =
+    profile.role === "admin"
+      ? `
+        <button
+          class="btn secondary"
+          onclick="deleteRecording('${recording.id}')"
+        >
+          녹취록 삭제
+        </button>
+      `
+      : "";
 
 
   app.innerHTML = `
@@ -1226,12 +1066,18 @@ async function recordingDetail(
           THE ONE <b>SPACE</b>
         </div>
 
-        <button
-          class="btn secondary"
-          onclick="recordingsPage()"
-        >
-          목록으로
-        </button>
+        <div>
+
+          ${deleteButton}
+
+          <button
+            class="btn secondary"
+            onclick="recordingsPage()"
+          >
+            목록으로
+          </button>
+
+        </div>
 
       </div>
 
@@ -1239,34 +1085,26 @@ async function recordingDetail(
       <section class="hero">
 
         <div class="muted">
-          ${escapeHtml(
-            recording.consultation_date
-          )}
+          ${escapeHtml(recording.consultation_date)}
         </div>
 
         <h1>
-          ${escapeHtml(
-            recording.short_title
-          )}
+          ${escapeHtml(recording.short_title)}
         </h1>
 
         <p>
           본인:
-          ${escapeHtml(
-            recording.owner_name
-          )}
+          ${escapeHtml(recording.owner_name)}
         </p>
 
         ${
           recording.companion_name
             ? `
-                <p>
-                  동행자:
-                  ${escapeHtml(
-                    recording.companion_name
-                  )}
-                </p>
-              `
+              <p>
+                동행자:
+                ${escapeHtml(recording.companion_name)}
+              </p>
+            `
             : ""
         }
 
@@ -1275,20 +1113,12 @@ async function recordingDetail(
 
       <div class="card">
 
-        <h3>
-          상세 내용
-        </h3>
+        <h3>상세 내용</h3>
 
-        <p
-          style="
-            white-space:pre-wrap;
-          "
-        >
+        <p style="white-space:pre-wrap;">
           ${
             recording.details
-              ? escapeHtml(
-                  recording.details
-                )
+              ? escapeHtml(recording.details)
               : "등록된 상세 내용이 없습니다."
           }
         </p>
@@ -1296,15 +1126,9 @@ async function recordingDetail(
       </div>
 
 
-      <h2
-        style="
-          margin-top:40px;
-        "
-      >
-        녹취 파일
-        (${files ? files.length : 0})
+      <h2 style="margin-top:40px;">
+        녹취 파일 (${files ? files.length : 0})
       </h2>
-
 
       <div class="grid">
         ${filesHtml}
@@ -1319,13 +1143,8 @@ async function recordingDetail(
 // PRIVATE 파일 열기
 // ========================================
 
-async function openRecordingFile(
-  filePath
-) {
-  const {
-    data,
-    error
-  } =
+async function openRecordingFile(filePath) {
+  const { data, error } =
     await client.storage
       .from("recordings")
       .createSignedUrl(
@@ -1334,16 +1153,10 @@ async function openRecordingFile(
       );
 
 
-  if (
-    error ||
-    !data?.signedUrl
-  ) {
+  if (error || !data?.signedUrl) {
     alert(
       "파일을 열지 못했습니다.\n" +
-      (
-        error?.message ||
-        ""
-      )
+      (error?.message || "")
     );
 
     return;
@@ -1359,15 +1172,137 @@ async function openRecordingFile(
 
 
 // ========================================
-// 관리자
+// 관리자 - 녹취록 삭제
+// ========================================
+
+async function deleteRecording(recordingId) {
+  const profile =
+    await getCurrentProfile();
+
+  if (
+    !profile ||
+    profile.role !== "admin"
+  ) {
+    alert("관리자만 삭제할 수 있습니다.");
+    return;
+  }
+
+
+  const confirmed =
+    confirm(
+      "이 녹취록을 삭제하시겠습니까?\n\n" +
+      "등록된 음성파일도 함께 삭제됩니다."
+    );
+
+
+  if (!confirmed) {
+    return;
+  }
+
+
+  const {
+    data: files,
+    error: filesError
+  } =
+    await client
+      .from("recording_files")
+      .select("file_path")
+      .eq(
+        "recording_id",
+        recordingId
+      );
+
+
+  if (filesError) {
+    alert(
+      "파일 목록 확인에 실패했습니다.\n" +
+      filesError.message
+    );
+    return;
+  }
+
+
+  const filePaths =
+    (files || [])
+      .map(file => file.file_path)
+      .filter(Boolean);
+
+
+  if (filePaths.length > 0) {
+    const {
+      error: storageError
+    } =
+      await client.storage
+        .from("recordings")
+        .remove(filePaths);
+
+
+    if (storageError) {
+      alert(
+        "음성파일 삭제에 실패했습니다.\n" +
+        storageError.message
+      );
+      return;
+    }
+  }
+
+
+  const {
+    error: fileDbError
+  } =
+    await client
+      .from("recording_files")
+      .delete()
+      .eq(
+        "recording_id",
+        recordingId
+      );
+
+
+  if (fileDbError) {
+    alert(
+      "파일정보 삭제에 실패했습니다.\n" +
+      fileDbError.message
+    );
+    return;
+  }
+
+
+  const {
+    error: recordingError
+  } =
+    await client
+      .from("recordings")
+      .delete()
+      .eq(
+        "id",
+        recordingId
+      );
+
+
+  if (recordingError) {
+    alert(
+      "녹취록 삭제에 실패했습니다.\n" +
+      recordingError.message
+    );
+    return;
+  }
+
+
+  alert("녹취록이 삭제되었습니다.");
+
+  await recordingsPage();
+}
+
+
+// ========================================
+// 관리자 페이지
 // ========================================
 
 async function adminPage() {
   const {
     data: { user }
-  } =
-    await client.auth.getUser();
-
+  } = await client.auth.getUser();
 
   if (!user) {
     authScreen();
@@ -1382,10 +1317,7 @@ async function adminPage() {
     await client
       .from("profiles")
       .select("*")
-      .eq(
-        "id",
-        user.id
-      )
+      .eq("id", user.id)
       .single();
 
 
@@ -1395,10 +1327,7 @@ async function adminPage() {
     myProfile.role !== "admin" ||
     myProfile.status !== "approved"
   ) {
-    alert(
-      "관리자만 이용할 수 있습니다."
-    );
-
+    alert("관리자만 이용할 수 있습니다.");
     return;
   }
 
@@ -1410,12 +1339,9 @@ async function adminPage() {
     await client
       .from("profiles")
       .select("*")
-      .order(
-        "name",
-        {
-          ascending: true
-        }
-      );
+      .order("name", {
+        ascending: true
+      });
 
 
   if (error) {
@@ -1423,24 +1349,18 @@ async function adminPage() {
       "직원 목록을 불러오지 못했습니다.\n" +
       error.message
     );
-
     return;
   }
 
 
   const pending =
     profiles.filter(
-      p =>
-        p.status ===
-        "pending"
+      p => p.status === "pending"
     );
-
 
   const approved =
     profiles.filter(
-      p =>
-        p.status ===
-        "approved"
+      p => p.status === "approved"
     );
 
 
@@ -1450,24 +1370,15 @@ async function adminPage() {
           <div class="card">
 
             <h3>
-              ${escapeHtml(
-                p.name ||
-                "이름 없음"
-              )}
+              ${escapeHtml(p.name || "이름 없음")}
             </h3>
 
             <p>
-              ${escapeHtml(
-                p.position ||
-                "-"
-              )}
+              ${escapeHtml(p.position || "-")}
             </p>
 
             <p class="muted">
-              ${escapeHtml(
-                p.email ||
-                ""
-              )}
+              ${escapeHtml(p.email || "")}
             </p>
 
             <button
@@ -1486,12 +1397,11 @@ async function adminPage() {
 
           </div>
         `).join("")
-
       : `
-          <p class="muted">
-            현재 승인 대기 중인 직원이 없습니다.
-          </p>
-        `;
+        <p class="muted">
+          현재 승인 대기 중인 직원이 없습니다.
+        </p>
+      `;
 
 
   const approvedHtml =
@@ -1500,17 +1410,11 @@ async function adminPage() {
           <div class="card">
 
             <h3>
-              ${escapeHtml(
-                p.name ||
-                "이름 없음"
-              )}
+              ${escapeHtml(p.name || "이름 없음")}
             </h3>
 
             <p>
-              ${escapeHtml(
-                p.position ||
-                "-"
-              )}
+              ${escapeHtml(p.position || "-")}
             </p>
 
             <p class="muted">
@@ -1522,20 +1426,16 @@ async function adminPage() {
             </p>
 
             <p class="muted">
-              ${escapeHtml(
-                p.email ||
-                ""
-              )}
+              ${escapeHtml(p.email || "")}
             </p>
 
           </div>
         `).join("")
-
       : `
-          <p class="muted">
-            승인된 직원이 없습니다.
-          </p>
-        `;
+        <p class="muted">
+          승인된 직원이 없습니다.
+        </p>
+      `;
 
 
   app.innerHTML = `
@@ -1575,8 +1475,7 @@ async function adminPage() {
 
 
       <h2>
-        승인 대기
-        (${pending.length})
+        승인 대기 (${pending.length})
       </h2>
 
       <div class="grid">
@@ -1584,13 +1483,8 @@ async function adminPage() {
       </div>
 
 
-      <h2
-        style="
-          margin-top:40px;
-        "
-      >
-        승인된 직원
-        (${approved.length})
+      <h2 style="margin-top:40px;">
+        승인된 직원 (${approved.length})
       </h2>
 
       <div class="grid">
@@ -1629,13 +1523,9 @@ async function changeUserStatus(
     await client
       .from("profiles")
       .update({
-        status:
-          newStatus
+        status: newStatus
       })
-      .eq(
-        "id",
-        userId
-      );
+      .eq("id", userId);
 
 
   if (error) {
@@ -1643,14 +1533,11 @@ async function changeUserStatus(
       "처리하지 못했습니다.\n" +
       error.message
     );
-
     return;
   }
 
 
-  alert(
-    `${text} 처리되었습니다.`
-  );
+  alert(`${text} 처리되었습니다.`);
 
   await adminPage();
 }
@@ -1679,7 +1566,6 @@ async function goHome() {
 
 async function logout() {
   await client.auth.signOut();
-
   authScreen();
 }
 
@@ -1690,14 +1576,9 @@ async function logout() {
 
 client.auth.onAuthStateChange(
   (event) => {
-
-    if (
-      event ===
-      "PASSWORD_RECOVERY"
-    ) {
+    if (event === "PASSWORD_RECOVERY") {
       showResetPasswordScreen();
     }
-
   }
 );
 
@@ -1736,8 +1617,7 @@ async function start() {
   if (
     !error &&
     profile &&
-    profile.status ===
-      "approved"
+    profile.status === "approved"
   ) {
     home(profile);
     return;
@@ -1745,7 +1625,6 @@ async function start() {
 
 
   await client.auth.signOut();
-
   authScreen();
 }
 
