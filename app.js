@@ -439,11 +439,15 @@ function home(profile) {
           <p>상담 녹취와 내용을 확인합니다.</p>
         </div>
 
-        <div class="card">
-          <div class="icon">📅</div>
-          <h3>스케줄</h3>
-          <p>지점 일정을 확인합니다.</p>
-        </div>
+        <div
+  class="card"
+  onclick="window.open('https://docs.google.com/spreadsheets/d/1h_mwY9v-YdpEknbme16u1-kvY618_QJN/edit?gid=1579963286#gid=1579963286', '_blank')"
+  style="cursor:pointer;"
+>
+  <div class="icon">📅</div>
+  <h3>스케줄</h3>
+  <p>지점 일정을 확인하고 입력합니다.</p>
+</div>
 
         <div class="card">
           <div class="icon">📢</div>
