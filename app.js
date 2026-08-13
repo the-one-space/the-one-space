@@ -449,11 +449,15 @@ function home(profile) {
   <p>지점 일정을 확인하고 입력합니다.</p>
 </div>
 
-        <div class="card">
-          <div class="icon">📢</div>
-          <h3>공지사항</h3>
-          <p>지점 공지를 확인합니다.</p>
-        </div>
+        <div
+  class="card"
+  onclick="noticesPage()"
+  style="cursor:pointer;"
+>
+  <div class="icon">📢</div>
+  <h3>공지사항</h3>
+  <p>지점 공지를 확인합니다.</p>
+</div>
 
         <div class="card">
           <div class="icon">📁</div>
@@ -1736,3 +1740,667 @@ async function start() {
 
 
 start();
+// =====================================================
+// 공지사항 권한 확인
+// 관리자 또는 비서
+// =====================================================
+
+function canManageNotices(profile) {
+  return (
+    profile &&
+    profile.status === "approved" &&
+    (
+      profile.role === "admin" ||
+      profile.position === "비서"
+    )
+  );
+}
+
+
+// =====================================================
+// 공지사항 목록
+// =====================================================
+
+async function noticesPage() {
+  const profile = await getCurrentProfile();
+
+  if (!profile || profile.status !== "approved") {
+    authScreen();
+    return;
+  }
+
+  const { data: notices, error } =
+    await client
+      .from("notices")
+      .select("*")
+      .order("is_pinned", { ascending: false })
+      .order("created_at", { ascending: false });
+
+  if (error) {
+    alert(
+      "공지사항을 불러오지 못했습니다.\n" +
+      error.message
+    );
+    return;
+  }
+
+  const writeButton =
+    canManageNotices(profile)
+      ? `
+        <button
+          class="btn"
+          onclick="newNoticeForm()"
+        >
+          + 새 공지 작성
+        </button>
+      `
+      : "";
+
+  const noticeHtml =
+    notices && notices.length
+      ? notices.map(notice => {
+
+          const date =
+            new Date(notice.created_at)
+              .toLocaleDateString("ko-KR");
+
+          return `
+            <div
+              class="card"
+              onclick="noticeDetail('${notice.id}')"
+              style="cursor:pointer;"
+            >
+
+              <div class="muted">
+                ${notice.is_pinned ? "📌 중요공지 · " : ""}
+                ${escapeHtml(date)}
+              </div>
+
+              <h3>
+                ${escapeHtml(notice.title)}
+              </h3>
+
+              <p>
+                ${
+                  escapeHtml(notice.content)
+                    .replace(/\n/g, " ")
+                    .slice(0, 80)
+                }${
+                  notice.content.length > 80
+                    ? "..."
+                    : ""
+                }
+              </p>
+
+            </div>
+          `;
+        }).join("")
+      : `
+        <div class="card">
+          <p class="muted">
+            등록된 공지사항이 없습니다.
+          </p>
+        </div>
+      `;
+
+  app.innerHTML = `
+    <div class="wrap">
+
+      <div class="top">
+
+        <div class="brand">
+          THE ONE <b>SPACE</b>
+        </div>
+
+        <button
+          class="btn secondary"
+          onclick="goHome()"
+        >
+          메인으로
+        </button>
+
+      </div>
+
+
+      <section class="hero">
+
+        <div class="muted">
+          NOTICE
+        </div>
+
+        <h1>공지사항</h1>
+
+        <p>
+          더원지점 공지사항을 확인합니다.
+        </p>
+
+        ${writeButton}
+
+      </section>
+
+
+      <div class="grid">
+        ${noticeHtml}
+      </div>
+
+    </div>
+  `;
+}
+
+
+// =====================================================
+// 새 공지 작성
+// =====================================================
+
+async function newNoticeForm() {
+  const profile = await getCurrentProfile();
+
+  if (!canManageNotices(profile)) {
+    alert("공지 작성 권한이 없습니다.");
+    return;
+  }
+
+  app.innerHTML = `
+    <div class="wrap">
+
+      <div class="top">
+
+        <div class="brand">
+          THE ONE <b>SPACE</b>
+        </div>
+
+        <button
+          class="btn secondary"
+          onclick="noticesPage()"
+        >
+          목록으로
+        </button>
+
+      </div>
+
+
+      <section class="hero">
+
+        <div class="muted">
+          NEW NOTICE
+        </div>
+
+        <h1>새 공지 작성</h1>
+
+      </section>
+
+
+      <div
+        class="auth"
+        style="max-width:700px;"
+      >
+
+        <div class="field">
+
+          <label>제목</label>
+
+          <input
+            id="noticeTitle"
+            type="text"
+            placeholder="공지 제목을 입력해 주세요."
+          >
+
+        </div>
+
+
+        <div class="field">
+
+          <label>내용</label>
+
+          <textarea
+            id="noticeContent"
+            rows="10"
+            style="width:100%;box-sizing:border-box;"
+            placeholder="공지 내용을 입력해 주세요."
+          ></textarea>
+
+        </div>
+
+
+        <div
+          class="field"
+          style="display:flex;align-items:center;gap:10px;"
+        >
+
+          <input
+            id="noticePinned"
+            type="checkbox"
+            style="width:auto;"
+          >
+
+          <label
+            for="noticePinned"
+            style="margin:0;"
+          >
+            📌 중요공지로 상단 고정
+          </label>
+
+        </div>
+
+
+        <button
+          id="noticeSaveBtn"
+          class="btn"
+          onclick="saveNotice()"
+        >
+          공지 등록
+        </button>
+
+        <div id="msg"></div>
+
+      </div>
+
+    </div>
+  `;
+}
+
+
+// =====================================================
+// 공지 저장
+// =====================================================
+
+async function saveNotice() {
+  const title =
+    document
+      .getElementById("noticeTitle")
+      .value
+      .trim();
+
+  const content =
+    document
+      .getElementById("noticeContent")
+      .value
+      .trim();
+
+  const isPinned =
+    document
+      .getElementById("noticePinned")
+      .checked;
+
+  if (!title) {
+    setMsg("공지 제목을 입력해 주세요.");
+    return;
+  }
+
+  if (!content) {
+    setMsg("공지 내용을 입력해 주세요.");
+    return;
+  }
+
+  const user = await getCurrentUser();
+  const profile = await getCurrentProfile();
+
+  if (!user || !canManageNotices(profile)) {
+    setMsg("공지 작성 권한이 없습니다.");
+    return;
+  }
+
+  const button =
+    document.getElementById("noticeSaveBtn");
+
+  button.disabled = true;
+  button.textContent = "등록 중...";
+
+  const { error } =
+    await client
+      .from("notices")
+      .insert({
+        title: title,
+        content: content,
+        is_pinned: isPinned,
+        created_by: user.id
+      });
+
+  if (error) {
+    button.disabled = false;
+    button.textContent = "공지 등록";
+
+    setMsg(
+      "공지 등록 실패: " +
+      error.message
+    );
+    return;
+  }
+
+  alert("공지사항이 등록되었습니다.");
+
+  await noticesPage();
+}
+
+
+// =====================================================
+// 공지 상세
+// =====================================================
+
+async function noticeDetail(noticeId) {
+  const profile = await getCurrentProfile();
+
+  if (!profile) {
+    authScreen();
+    return;
+  }
+
+  const { data: notice, error } =
+    await client
+      .from("notices")
+      .select("*")
+      .eq("id", noticeId)
+      .single();
+
+  if (error || !notice) {
+    alert("공지사항을 불러오지 못했습니다.");
+    await noticesPage();
+    return;
+  }
+
+  const manageButtons =
+    canManageNotices(profile)
+      ? `
+        <button
+          class="btn"
+          onclick="editNoticeForm('${notice.id}')"
+        >
+          수정
+        </button>
+
+        <button
+          class="btn secondary"
+          onclick="deleteNotice('${notice.id}')"
+        >
+          삭제
+        </button>
+      `
+      : "";
+
+  const date =
+    new Date(notice.created_at)
+      .toLocaleString("ko-KR");
+
+  app.innerHTML = `
+    <div class="wrap">
+
+      <div class="top">
+
+        <div class="brand">
+          THE ONE <b>SPACE</b>
+        </div>
+
+        <div>
+
+          ${manageButtons}
+
+          <button
+            class="btn secondary"
+            onclick="noticesPage()"
+          >
+            목록으로
+          </button>
+
+        </div>
+
+      </div>
+
+
+      <section class="hero">
+
+        <div class="muted">
+          ${
+            notice.is_pinned
+              ? "📌 중요공지 · "
+              : ""
+          }
+          ${escapeHtml(date)}
+        </div>
+
+        <h1>
+          ${escapeHtml(notice.title)}
+        </h1>
+
+      </section>
+
+
+      <div class="card">
+
+        <p style="white-space:pre-wrap;line-height:1.8;">
+${escapeHtml(notice.content)}
+        </p>
+
+      </div>
+
+    </div>
+  `;
+}
+
+
+// =====================================================
+// 공지 수정 화면
+// =====================================================
+
+async function editNoticeForm(noticeId) {
+  const profile = await getCurrentProfile();
+
+  if (!canManageNotices(profile)) {
+    alert("공지 수정 권한이 없습니다.");
+    return;
+  }
+
+  const { data: notice, error } =
+    await client
+      .from("notices")
+      .select("*")
+      .eq("id", noticeId)
+      .single();
+
+  if (error || !notice) {
+    alert("공지사항을 불러오지 못했습니다.");
+    return;
+  }
+
+  app.innerHTML = `
+    <div class="wrap">
+
+      <div class="top">
+
+        <div class="brand">
+          THE ONE <b>SPACE</b>
+        </div>
+
+        <button
+          class="btn secondary"
+          onclick="noticeDetail('${notice.id}')"
+        >
+          취소
+        </button>
+
+      </div>
+
+
+      <section class="hero">
+
+        <div class="muted">
+          EDIT NOTICE
+        </div>
+
+        <h1>공지 수정</h1>
+
+      </section>
+
+
+      <div
+        class="auth"
+        style="max-width:700px;"
+      >
+
+        <div class="field">
+
+          <label>제목</label>
+
+          <input
+            id="editNoticeTitle"
+            type="text"
+            value="${escapeHtml(notice.title)}"
+          >
+
+        </div>
+
+
+        <div class="field">
+
+          <label>내용</label>
+
+          <textarea
+            id="editNoticeContent"
+            rows="10"
+            style="width:100%;box-sizing:border-box;"
+          >${escapeHtml(notice.content)}</textarea>
+
+        </div>
+
+
+        <div
+          class="field"
+          style="display:flex;align-items:center;gap:10px;"
+        >
+
+          <input
+            id="editNoticePinned"
+            type="checkbox"
+            style="width:auto;"
+            ${notice.is_pinned ? "checked" : ""}
+          >
+
+          <label
+            for="editNoticePinned"
+            style="margin:0;"
+          >
+            📌 중요공지로 상단 고정
+          </label>
+
+        </div>
+
+
+        <button
+          class="btn"
+          onclick="updateNotice('${notice.id}')"
+        >
+          수정 저장
+        </button>
+
+        <div id="msg"></div>
+
+      </div>
+
+    </div>
+  `;
+}
+
+
+// =====================================================
+// 공지 수정 저장
+// =====================================================
+
+async function updateNotice(noticeId) {
+  const title =
+    document
+      .getElementById("editNoticeTitle")
+      .value
+      .trim();
+
+  const content =
+    document
+      .getElementById("editNoticeContent")
+      .value
+      .trim();
+
+  const isPinned =
+    document
+      .getElementById("editNoticePinned")
+      .checked;
+
+  if (!title) {
+    setMsg("공지 제목을 입력해 주세요.");
+    return;
+  }
+
+  if (!content) {
+    setMsg("공지 내용을 입력해 주세요.");
+    return;
+  }
+
+  const profile = await getCurrentProfile();
+
+  if (!canManageNotices(profile)) {
+    setMsg("공지 수정 권한이 없습니다.");
+    return;
+  }
+
+  const { error } =
+    await client
+      .from("notices")
+      .update({
+        title: title,
+        content: content,
+        is_pinned: isPinned,
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", noticeId);
+
+  if (error) {
+    setMsg(
+      "공지 수정 실패: " +
+      error.message
+    );
+    return;
+  }
+
+  alert("공지사항이 수정되었습니다.");
+
+  await noticeDetail(noticeId);
+}
+
+
+// =====================================================
+// 공지 삭제
+// =====================================================
+
+async function deleteNotice(noticeId) {
+  const profile = await getCurrentProfile();
+
+  if (!canManageNotices(profile)) {
+    alert("공지 삭제 권한이 없습니다.");
+    return;
+  }
+
+  const confirmed =
+    confirm(
+      "이 공지사항을 삭제하시겠습니까?\n\n" +
+      "삭제 후 복구할 수 없습니다."
+    );
+
+  if (!confirmed) {
+    return;
+  }
+
+  const { error } =
+    await client
+      .from("notices")
+      .delete()
+      .eq("id", noticeId);
+
+  if (error) {
+    alert(
+      "공지 삭제 실패:\n" +
+      error.message
+    );
+    return;
+  }
+
+  alert("공지사항이 삭제되었습니다.");
+
+  await noticesPage();
+}
