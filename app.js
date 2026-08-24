@@ -7,6 +7,61 @@ const app = document.getElementById("app");
 const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 
+let deferredInstallPrompt = null;
+
+window.addEventListener("beforeinstallprompt", event => {
+  event.preventDefault();
+  deferredInstallPrompt = event;
+});
+
+window.addEventListener("appinstalled", () => {
+  deferredInstallPrompt = null;
+});
+
+async function installApp() {
+  const isStandalone =
+    window.matchMedia("(display-mode: standalone)").matches ||
+    window.navigator.standalone === true;
+
+  if (isStandalone) {
+    alert("THE ONE SPACE가 이미 앱으로 설치되어 있습니다.");
+    return;
+  }
+
+  if (deferredInstallPrompt) {
+    deferredInstallPrompt.prompt();
+    await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt = null;
+    return;
+  }
+
+  const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+
+  if (isIos) {
+    alert(
+      "아이폰 설치 방법\n\n" +
+      "1. Safari로 이 페이지를 열어 주세요.\n" +
+      "2. 아래쪽 공유 버튼(□↑)을 눌러 주세요.\n" +
+      "3. '홈 화면에 추가'를 선택해 주세요."
+    );
+    return;
+  }
+
+  alert(
+    "브라우저 오른쪽 위 메뉴(⋮)에서\n" +
+    "'앱 설치' 또는 '홈 화면에 추가'를 눌러 주세요."
+  );
+}
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker
+      .register("./service-worker.js")
+      .catch(error => console.error("Service worker registration failed:", error));
+  });
+}
+
+
 // =====================================================
 // 화면 뒤로가기 기록
 // =====================================================
@@ -524,6 +579,7 @@ async function home(profile) {
         <div class="sidebar-footer">
           <b>THE ONE SPACE</b>
           <small>AIA Premier Partners 더원지점</small>
+          <button class="install-button" onclick="installApp()">📲 앱 설치하기</button>
           <button onclick="logout()">로그아웃</button>
         </div>
       </aside>
