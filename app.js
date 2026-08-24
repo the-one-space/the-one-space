@@ -58,7 +58,7 @@ function authScreen() {
   app.innerHTML = `
     <div class="auth">
 
-      <div class="brand">
+      <div class="brand" onclick="goHome()" role="button" tabindex="0" title="메인으로" style="cursor:pointer;" onkeydown="if(event.key === 'Enter' || event.key === ' '){ event.preventDefault(); goHome(); }">
         THE ONE <b>SPACE</b>
       </div>
 
@@ -111,7 +111,7 @@ function signupForm() {
   app.innerHTML = `
     <div class="auth">
 
-      <div class="brand">
+      <div class="brand" onclick="goHome()" role="button" tabindex="0" title="메인으로" style="cursor:pointer;" onkeydown="if(event.key === 'Enter' || event.key === ' '){ event.preventDefault(); goHome(); }">
         THE ONE <b>SPACE</b>
       </div>
 
@@ -299,7 +299,7 @@ function showResetPasswordScreen() {
   app.innerHTML = `
     <div class="auth">
 
-      <div class="brand">
+      <div class="brand" onclick="goHome()" role="button" tabindex="0" title="메인으로" style="cursor:pointer;" onkeydown="if(event.key === 'Enter' || event.key === ' '){ event.preventDefault(); goHome(); }">
         THE ONE <b>SPACE</b>
       </div>
 
@@ -396,7 +396,7 @@ function home(profile) {
 
       <div class="top">
 
-        <div class="brand">
+        <div class="brand" onclick="goHome()" role="button" tabindex="0" title="메인으로" style="cursor:pointer;" onkeydown="if(event.key === 'Enter' || event.key === ' '){ event.preventDefault(); goHome(); }">
           THE ONE <b>SPACE</b>
         </div>
 
@@ -554,7 +554,7 @@ async function recordingsPage() {
 
       <div class="top">
 
-        <div class="brand">
+        <div class="brand" onclick="goHome()" role="button" tabindex="0" title="메인으로" style="cursor:pointer;" onkeydown="if(event.key === 'Enter' || event.key === ' '){ event.preventDefault(); goHome(); }">
           THE ONE <b>SPACE</b>
         </div>
 
@@ -617,7 +617,7 @@ async function newRecordingForm() {
 
       <div class="top">
 
-        <div class="brand">
+        <div class="brand" onclick="goHome()" role="button" tabindex="0" title="메인으로" style="cursor:pointer;" onkeydown="if(event.key === 'Enter' || event.key === ' '){ event.preventDefault(); goHome(); }">
           THE ONE <b>SPACE</b>
         </div>
 
@@ -1026,7 +1026,7 @@ async function recordingDetail(recordingId) {
 
       <div class="top">
 
-        <div class="brand">
+        <div class="brand" onclick="goHome()" role="button" tabindex="0" title="메인으로" style="cursor:pointer;" onkeydown="if(event.key === 'Enter' || event.key === ' '){ event.preventDefault(); goHome(); }">
           THE ONE <b>SPACE</b>
         </div>
 
@@ -1140,7 +1140,7 @@ async function editRecordingForm(recordingId) {
 
       <div class="top">
 
-        <div class="brand">
+        <div class="brand" onclick="goHome()" role="button" tabindex="0" title="메인으로" style="cursor:pointer;" onkeydown="if(event.key === 'Enter' || event.key === ' '){ event.preventDefault(); goHome(); }">
           THE ONE <b>SPACE</b>
         </div>
 
@@ -1578,7 +1578,7 @@ async function adminPage() {
 
       <div class="top">
 
-        <div class="brand">
+        <div class="brand" onclick="goHome()" role="button" tabindex="0" title="메인으로" style="cursor:pointer;" onkeydown="if(event.key === 'Enter' || event.key === ' '){ event.preventDefault(); goHome(); }">
           THE ONE <b>SPACE</b>
         </div>
 
@@ -1852,7 +1852,7 @@ async function noticesPage() {
 
       <div class="top">
 
-        <div class="brand">
+        <div class="brand" onclick="goHome()" role="button" tabindex="0" title="메인으로" style="cursor:pointer;" onkeydown="if(event.key === 'Enter' || event.key === ' '){ event.preventDefault(); goHome(); }">
           THE ONE <b>SPACE</b>
         </div>
 
@@ -1909,7 +1909,7 @@ async function newNoticeForm() {
 
       <div class="top">
 
-        <div class="brand">
+        <div class="brand" onclick="goHome()" role="button" tabindex="0" title="메인으로" style="cursor:pointer;" onkeydown="if(event.key === 'Enter' || event.key === ' '){ event.preventDefault(); goHome(); }">
           THE ONE <b>SPACE</b>
         </div>
 
@@ -2130,7 +2130,7 @@ async function noticeDetail(noticeId) {
 
       <div class="top">
 
-        <div class="brand">
+        <div class="brand" onclick="goHome()" role="button" tabindex="0" title="메인으로" style="cursor:pointer;" onkeydown="if(event.key === 'Enter' || event.key === ' '){ event.preventDefault(); goHome(); }">
           THE ONE <b>SPACE</b>
         </div>
 
@@ -2210,7 +2210,7 @@ async function editNoticeForm(noticeId) {
 
       <div class="top">
 
-        <div class="brand">
+        <div class="brand" onclick="goHome()" role="button" tabindex="0" title="메인으로" style="cursor:pointer;" onkeydown="if(event.key === 'Enter' || event.key === ' '){ event.preventDefault(); goHome(); }">
           THE ONE <b>SPACE</b>
         </div>
 
@@ -2470,7 +2470,7 @@ async function resourcesPage() {
   app.innerHTML = `
     <div class="wrap">
       <div class="top">
-        <div class="brand">THE ONE <b>SPACE</b></div>
+        <div class="brand" onclick="goHome()" role="button" tabindex="0" title="메인으로" style="cursor:pointer;" onkeydown="if(event.key === 'Enter' || event.key === ' '){ event.preventDefault(); goHome(); }">THE ONE <b>SPACE</b></div>
         <button class="btn secondary" onclick="goHome()">메인으로</button>
       </div>
       <section class="hero">
@@ -2513,7 +2513,7 @@ async function newResourceForm() {
   app.innerHTML = `
     <div class="wrap">
       <div class="top">
-        <div class="brand">THE ONE <b>SPACE</b></div>
+        <div class="brand" onclick="goHome()" role="button" tabindex="0" title="메인으로" style="cursor:pointer;" onkeydown="if(event.key === 'Enter' || event.key === ' '){ event.preventDefault(); goHome(); }">THE ONE <b>SPACE</b></div>
         <button class="btn secondary" onclick="resourcesPage()">목록으로</button>
       </div>
       <section class="hero"><div class="muted">NEW RESOURCE</div><h1>새 자료 등록</h1></section>
@@ -2614,7 +2614,7 @@ async function resourceDetail(resourceId) {
   app.innerHTML = `
     <div class="wrap">
       <div class="top">
-        <div class="brand">THE ONE <b>SPACE</b></div>
+        <div class="brand" onclick="goHome()" role="button" tabindex="0" title="메인으로" style="cursor:pointer;" onkeydown="if(event.key === 'Enter' || event.key === ' '){ event.preventDefault(); goHome(); }">THE ONE <b>SPACE</b></div>
         <div class="button-row">
           ${canEdit ? `<button class="btn" onclick="editResourceForm('${resource.id}')">수정</button>` : ""}
           ${canDelete ? `<button class="btn secondary" onclick="deleteResource('${resource.id}')">삭제</button>` : ""}
@@ -2648,7 +2648,7 @@ async function editResourceForm(resourceId) {
 
   app.innerHTML = `
     <div class="wrap">
-      <div class="top"><div class="brand">THE ONE <b>SPACE</b></div><button class="btn secondary" onclick="resourceDetail('${resource.id}')">취소</button></div>
+      <div class="top"><div class="brand" onclick="goHome()" role="button" tabindex="0" title="메인으로" style="cursor:pointer;" onkeydown="if(event.key === 'Enter' || event.key === ' '){ event.preventDefault(); goHome(); }">THE ONE <b>SPACE</b></div><button class="btn secondary" onclick="resourceDetail('${resource.id}')">취소</button></div>
       <section class="hero"><div class="muted">EDIT RESOURCE</div><h1>자료 수정</h1></section>
       <div class="auth" style="max-width:700px;">
         <div class="field"><label>제목</label><input id="editResourceTitle" type="text" value="${escapeHtml(resource.title)}"></div>
