@@ -36,6 +36,14 @@ body{
 .field input,.field select{
   width:100%;padding:13px;border:1px solid #ddd;border-radius:11px
 }
+.field textarea{width:100%;padding:13px;border:1px solid #ddd;border-radius:11px;font:inherit;resize:vertical}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 20px}
+.toolbar input,.toolbar select{min-width:180px;flex:1;padding:12px 13px;border:1px solid #ddd;border-radius:11px;background:#fff}
+.tag{display:inline-block;margin:4px 4px 0 0;padding:4px 9px;border-radius:999px;background:#fff1f1;color:#b41117;font-size:12px;font-weight:700}
+.file-row{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid #eee}
+.file-row:last-child{border-bottom:0}
+.file-name{min-width:0;overflow-wrap:anywhere}
+.button-row{display:flex;gap:8px;flex-wrap:wrap}
 .msg{
   margin:14px 0;padding:11px;border-radius:10px;
   background:#f5f5f5;font-size:14px
@@ -47,4 +55,5 @@ body{
 @media(max-width:520px){
   .grid{grid-template-columns:1fr}
   .hero{padding:28px}
+  .file-row{align-items:flex-start;flex-direction:column}
 }
