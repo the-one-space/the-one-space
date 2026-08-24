@@ -1,0 +1,27 @@
+{
+  "name": "THE ONE SPACE - 더원지점",
+  "short_name": "THE ONE SPACE",
+  "description": "AIA 프리미어파트너스 더원지점 전용 업무 공간",
+  "id": "/the-one-space/",
+  "start_url": "/the-one-space/?source=pwa",
+  "scope": "/the-one-space/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f4f7fb",
+  "theme_color": "#062541",
+  "lang": "ko-KR",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
