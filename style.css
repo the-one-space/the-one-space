@@ -163,3 +163,22 @@ body:has(> #app > .wrap),body:has(> #app > .auth){background:#f4f7fb;color:#142b
   #app>.auth{margin:22px 14px;padding:34px 24px}.toolbar{padding:11px}.toolbar input,.toolbar select{min-width:100%}
   .button-row{gap:5px}.button-row .btn{padding:9px 10px}
 }
+
+/* Contact directory */
+.contact-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:13px}
+.contact-card{display:flex;align-items:center;gap:16px;cursor:pointer;position:relative}
+.contact-avatar{width:54px;height:54px;border-radius:17px;display:grid;place-items:center;flex:0 0 auto;background:linear-gradient(145deg,#ffdce6,#f4a8bc);color:#a80d37;font-size:21px;font-weight:900}
+.contact-avatar.large{width:70px;height:70px;margin:0 auto 12px;border-radius:22px;font-size:27px}
+.contact-info{min-width:0;flex:1}.contact-info h3{font-size:19px!important;margin:4px 0 7px!important}.contact-position{display:inline-block;padding:3px 8px;border-radius:999px;background:#e7f1fc;color:#145a92;font-size:11px;font-weight:800}
+.contact-phone{font-size:15px!important;color:#183d5e!important;font-weight:700}.contact-memo{margin-top:5px!important;font-size:12px!important}
+.contact-manage{display:flex;gap:5px}.contact-manage .btn{padding:7px 9px;font-size:11px}
+.contact-empty{text-align:center;grid-column:1/-1}
+.contact-modal-backdrop{position:fixed;inset:0;z-index:1000;background:rgba(2,23,42,.62);display:grid;place-items:center;padding:22px;backdrop-filter:blur(4px)}
+.contact-modal{width:min(390px,100%);padding:30px 24px;border-radius:22px;background:#fff;text-align:center;box-shadow:0 25px 70px rgba(0,0,0,.25)}
+.contact-modal h2{margin:7px 0 5px;color:#102e47;font-size:25px}.contact-modal>p{margin:0 0 24px;color:#5d7183;font-size:17px}
+.contact-action-buttons{display:grid;gap:9px}.contact-action-buttons .btn{width:100%;padding:14px}
+.contact-cancel{border:0;background:transparent;color:#778693;padding:10px;font:inherit;cursor:pointer}
+@media(max-width:520px){
+  .contact-grid{grid-template-columns:1fr}.contact-card{padding:17px!important}.contact-avatar{width:48px;height:48px;border-radius:15px}
+  .contact-manage{flex-direction:column}.contact-manage .btn{padding:6px 8px}
+}
