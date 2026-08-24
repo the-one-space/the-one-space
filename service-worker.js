@@ -1,4 +1,4 @@
-const CACHE_NAME = "the-one-space-v2";
+const CACHE_NAME = "the-one-space-v3";
 const APP_SHELL = [
   "./",
   "./index.html",
