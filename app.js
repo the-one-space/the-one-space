@@ -514,7 +514,7 @@ async function home(profile) {
           <div><small>AIA PREMIER PARTNERS</small><strong>더원지점</strong></div>
         </div>
         <nav class="sidebar-nav" aria-label="주요 메뉴">
-          <button class="active" onclick="goHome()"><span>⌂</span> 대시보드</button>
+          <button class="active" onclick="goHome()"><span>⌂</span> 메인화면</button>
           <button onclick="recordingsPage()"><span>◉</span> 녹취록 관리</button>
           <button onclick="resourcesPage()"><span>▰</span> 자료실</button>
           <button onclick="noticesPage()"><span>◀</span> 공지사항</button>
@@ -538,10 +538,6 @@ async function home(profile) {
             <span>⌕</span>
             <input id="dashboardSearch" type="search" placeholder="메인 화면에서 검색" oninput="filterDashboardItems()">
           </label>
-          <div class="dashboard-user">
-            <span class="user-avatar">${escapeHtml((profile.name || "더원").slice(0, 1))}</span>
-            <div><b>${escapeHtml(profile.name)}</b><small>${escapeHtml(profile.position || "직원")}</small></div>
-          </div>
         </header>
 
         <div class="dashboard-content">
