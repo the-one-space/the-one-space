@@ -8,6 +8,75 @@ const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 
 // =====================================================
+// 화면 뒤로가기 기록
+// =====================================================
+
+const viewHistory = [];
+let currentViewIndex = -1;
+let restoringView = false;
+let viewHistoryReady = false;
+
+function saveCurrentView() {
+  if (restoringView) {
+    restoringView = false;
+    return;
+  }
+
+  const html = app.innerHTML;
+
+  if (!html || (currentViewIndex >= 0 && viewHistory[currentViewIndex] === html)) {
+    return;
+  }
+
+  if (!viewHistoryReady) {
+    viewHistory.push(html);
+    currentViewIndex = 0;
+    viewHistoryReady = true;
+    history.replaceState(
+      { theOneViewIndex: 0 },
+      document.title,
+      window.location.href
+    );
+    return;
+  }
+
+  viewHistory.splice(currentViewIndex + 1);
+  viewHistory.push(html);
+  currentViewIndex = viewHistory.length - 1;
+
+  history.pushState(
+    { theOneViewIndex: currentViewIndex },
+    document.title,
+    window.location.href
+  );
+}
+
+const viewObserver = new MutationObserver(() => {
+  queueMicrotask(saveCurrentView);
+});
+
+viewObserver.observe(app, {
+  childList: true
+});
+
+window.addEventListener("popstate", event => {
+  const targetIndex = event.state?.theOneViewIndex;
+
+  if (
+    typeof targetIndex !== "number" ||
+    !viewHistory[targetIndex]
+  ) {
+    return;
+  }
+
+  restoringView = true;
+  currentViewIndex = targetIndex;
+  app.innerHTML = viewHistory[targetIndex];
+});
+
+
+
+// =====================================================
 // 공통
 // =====================================================
 
