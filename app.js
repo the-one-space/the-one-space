@@ -572,7 +572,7 @@ async function home(profile) {
           <button class="active" onclick="goHome()"><span>⌂</span> 메인화면</button>
           <button onclick="recordingsPage()"><span>◉</span> 녹취록 관리</button>
           <button onclick="resourcesPage()"><span>▰</span> 자료실</button>
-          <button onclick="noticesPage()"><span>◀</span> 공지사항</button>
+          <button onclick="noticesPage()"><span>◀</span> 공지사항</button>\n          <button onclick="contactsPage()"><span>♙</span> 지점원 연락처</button>
           <button onclick="window.open('${scheduleUrl}', '_blank')"><span>▣</span> 일정</button>\n          <button onclick="installApp()"><span>⇩</span> 앱 설치</button>
         </nav>
         ${adminMenu}
@@ -638,7 +638,7 @@ async function home(profile) {
               <div class="quick-grid">
                 <button onclick="newRecordingForm()"><span>🎙</span>녹취록 등록</button>
                 <button onclick="newResourceForm()"><span>▰</span>자료실 업로드</button>
-                <button onclick="noticesPage()"><span>📢</span>공지사항</button>
+                <button onclick="noticesPage()"><span>📢</span>공지사항</button>\n                <button onclick="contactsPage()"><span>☎</span>지점원 연락처</button>
                 <button onclick="window.open('${scheduleUrl}', '_blank')"><span>▣</span>일정 확인</button>
                 <button onclick="recordingsPage()"><span>⌕</span>녹취록 찾기</button>
                 ${profile.role === "admin"
@@ -2601,6 +2601,270 @@ async function deleteNotice(noticeId) {
   alert("공지사항이 삭제되었습니다.");
 
   await noticesPage();
+}
+
+
+let contactDirectoryCache = [];
+
+function canManageContacts(profile) {
+  return (
+    profile &&
+    profile.status === "approved" &&
+    (profile.role === "admin" || profile.position === "비서")
+  );
+}
+
+function contactPositionRank(position) {
+  const ranks = { "지점장": 1, "이사": 2, "팀장": 3, "MP": 4, "비서": 5 };
+  return ranks[position] || 99;
+}
+
+async function contactsPage() {
+  const profile = await getCurrentProfile();
+  if (!profile || profile.status !== "approved") {
+    authScreen();
+    return;
+  }
+
+  const { data: contacts, error } = await client.from("contacts").select("*");
+  if (error) {
+    alert("연락처를 불러오지 못했습니다.\n" + error.message);
+    return;
+  }
+
+  contactDirectoryCache = (contacts || []).sort((a, b) =>
+    contactPositionRank(a.position) - contactPositionRank(b.position) ||
+    String(a.name).localeCompare(String(b.name), "ko")
+  );
+
+  const canManage = canManageContacts(profile);
+  const cards = contactDirectoryCache.length
+    ? contactDirectoryCache.map(item => `
+        <article class="card contact-card contact-search-item"
+          data-search="${escapeHtml(item.name + " " + item.position + " " + item.phone + " " + (item.memo || ""))}"
+          onclick="showContactActions('${item.id}')">
+          <div class="contact-avatar">${escapeHtml(item.name.slice(0, 1))}</div>
+          <div class="contact-info">
+            <span class="contact-position">${escapeHtml(item.position)}</span>
+            <h3>${escapeHtml(item.name)}</h3>
+            <p class="contact-phone">📞 ${escapeHtml(item.phone)}</p>
+            ${item.memo ? `<p class="contact-memo">${escapeHtml(item.memo)}</p>` : ""}
+          </div>
+          ${canManage ? `
+            <div class="contact-manage">
+              <button class="btn secondary" onclick="event.stopPropagation();editContactForm('${item.id}')">수정</button>
+              <button class="btn secondary" onclick="event.stopPropagation();deleteContact('${item.id}')">삭제</button>
+            </div>` : ""}
+        </article>`).join("")
+    : `<div class="card contact-empty"><p class="muted">등록된 지점원 연락처가 없습니다.</p></div>`;
+
+  app.innerHTML = `
+    <div class="wrap">
+      <div class="top">
+        <div class="brand" onclick="goHome()" role="button" tabindex="0" title="메인으로"
+          style="cursor:pointer;" onkeydown="if(event.key === 'Enter' || event.key === ' '){event.preventDefault();goHome();}">
+          THE ONE <b>SPACE</b>
+        </div>
+        <button class="btn secondary" onclick="goHome()">메인으로</button>
+      </div>
+
+      <section class="hero">
+        <div class="muted">CONTACT DIRECTORY</div>
+        <h1>지점원 연락처</h1>
+        <p>지점원 연락처를 검색하고 전화하거나 휴대폰에 저장할 수 있습니다.</p>
+        ${canManage ? `<button class="btn" onclick="newContactForm()">+ 연락처 등록</button>` : ""}
+      </section>
+
+      <div class="toolbar">
+        <input id="contactSearch" type="search" placeholder="이름, 직급, 전화번호 검색"
+          oninput="filterContacts()">
+      </div>
+
+      <div id="contactGrid" class="contact-grid">${cards}</div>
+      <p id="contactSearchEmpty" class="card contact-empty" hidden>검색 결과가 없습니다.</p>
+    </div>`;
+}
+
+function filterContacts() {
+  const query = document.getElementById("contactSearch").value.trim().toLowerCase();
+  const items = Array.from(document.querySelectorAll(".contact-search-item"));
+  let visible = 0;
+  items.forEach(item => {
+    const show = !query || (item.dataset.search || "").toLowerCase().includes(query);
+    item.style.display = show ? "" : "none";
+    if (show) visible += 1;
+  });
+  const empty = document.getElementById("contactSearchEmpty");
+  if (empty) empty.hidden = visible > 0;
+}
+
+function showContactActions(contactId) {
+  const contact = contactDirectoryCache.find(item => item.id === contactId);
+  if (!contact) return;
+
+  closeContactActions();
+  document.body.insertAdjacentHTML("beforeend", `
+    <div id="contactActionModal" class="contact-modal-backdrop" onclick="closeContactActions()">
+      <div class="contact-modal" onclick="event.stopPropagation()">
+        <div class="contact-avatar large">${escapeHtml(contact.name.slice(0, 1))}</div>
+        <span class="contact-position">${escapeHtml(contact.position)}</span>
+        <h2>${escapeHtml(contact.name)}</h2>
+        <p>${escapeHtml(contact.phone)}</p>
+        <div class="contact-action-buttons">
+          <button class="btn" onclick="callContact('${contact.id}')">📞 전화하기</button>
+          <button class="btn secondary" onclick="saveContactToPhone('${contact.id}')">👤 연락처에 저장</button>
+          <button class="contact-cancel" onclick="closeContactActions()">취소</button>
+        </div>
+      </div>
+    </div>`);
+}
+
+function closeContactActions() {
+  document.getElementById("contactActionModal")?.remove();
+}
+
+function callContact(contactId) {
+  const contact = contactDirectoryCache.find(item => item.id === contactId);
+  if (!contact) return;
+  const phone = String(contact.phone).replace(/[^\d+]/g, "");
+  window.location.href = "tel:" + phone;
+}
+
+function escapeVcard(value) {
+  return String(value || "")
+    .replaceAll("\\", "\\\\")
+    .replaceAll("\n", "\\n")
+    .replaceAll(",", "\\,")
+    .replaceAll(";", "\\;");
+}
+
+function saveContactToPhone(contactId) {
+  const contact = contactDirectoryCache.find(item => item.id === contactId);
+  if (!contact) return;
+
+  const vcard = [
+    "BEGIN:VCARD",
+    "VERSION:3.0",
+    `FN:${escapeVcard(contact.name)}`,
+    `N:${escapeVcard(contact.name)};;;;`,
+    `TEL;TYPE=CELL:${escapeVcard(contact.phone)}`,
+    `ORG:${escapeVcard("AIA 프리미어파트너스 더원지점")}`,
+    `TITLE:${escapeVcard(contact.position)}`,
+    contact.memo ? `NOTE:${escapeVcard(contact.memo)}` : "",
+    "END:VCARD"
+  ].filter(Boolean).join("\r\n");
+
+  const blob = new Blob([vcard], { type: "text/vcard;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${contact.name}.vcf`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  closeContactActions();
+}
+
+async function newContactForm() {
+  const profile = await getCurrentProfile();
+  if (!canManageContacts(profile)) return alert("관리자 또는 비서만 연락처를 등록할 수 있습니다.");
+
+  app.innerHTML = `
+    <div class="wrap">
+      <div class="top">
+        <div class="brand" onclick="goHome()" role="button" tabindex="0" style="cursor:pointer;">THE ONE <b>SPACE</b></div>
+        <button class="btn secondary" onclick="contactsPage()">목록으로</button>
+      </div>
+      <section class="hero"><div class="muted">NEW CONTACT</div><h1>지점원 연락처 등록</h1></section>
+      <div class="auth" style="max-width:700px;">
+        <div class="field"><label>이름</label><input id="contactName" type="text" placeholder="이름을 입력해 주세요."></div>
+        <div class="field"><label>직급</label><select id="contactPosition">
+          <option value="지점장">지점장</option><option value="이사">이사</option>
+          <option value="팀장">팀장</option><option value="MP">MP</option><option value="비서">비서</option>
+        </select></div>
+        <div class="field"><label>전화번호</label><input id="contactPhone" type="tel" placeholder="010-0000-0000"></div>
+        <div class="field"><label>메모 (선택)</label><input id="contactMemo" type="text" placeholder="팀명이나 담당업무 등을 입력해 주세요."></div>
+        <button class="btn" onclick="createContact()">등록</button>
+        <div id="msg"></div>
+      </div>
+    </div>`;
+}
+
+async function createContact() {
+  const name = document.getElementById("contactName").value.trim();
+  const position = document.getElementById("contactPosition").value;
+  const phone = document.getElementById("contactPhone").value.trim();
+  const memo = document.getElementById("contactMemo").value.trim();
+  if (!name) return setMsg("이름을 입력해 주세요.");
+  if (!phone) return setMsg("전화번호를 입력해 주세요.");
+  const user = await getCurrentUser();
+  if (!user) return setMsg("로그인이 필요합니다.");
+
+  const { error } = await client.from("contacts").insert({
+    name, position, phone, memo: memo || null, created_by: user.id
+  });
+  if (error) return setMsg("연락처 등록 실패: " + escapeHtml(error.message));
+  alert("연락처가 등록되었습니다.");
+  await contactsPage();
+}
+
+async function editContactForm(contactId) {
+  const profile = await getCurrentProfile();
+  if (!canManageContacts(profile)) return alert("연락처 수정 권한이 없습니다.");
+  const { data: contact, error } = await client.from("contacts").select("*").eq("id", contactId).single();
+  if (error || !contact) return alert("연락처를 불러오지 못했습니다.");
+
+  app.innerHTML = `
+    <div class="wrap">
+      <div class="top">
+        <div class="brand" onclick="goHome()" role="button" tabindex="0" style="cursor:pointer;">THE ONE <b>SPACE</b></div>
+        <button class="btn secondary" onclick="contactsPage()">취소</button>
+      </div>
+      <section class="hero"><div class="muted">EDIT CONTACT</div><h1>지점원 연락처 수정</h1></section>
+      <div class="auth" style="max-width:700px;">
+        <div class="field"><label>이름</label><input id="editContactName" type="text" value="${escapeHtml(contact.name)}"></div>
+        <div class="field"><label>직급</label><select id="editContactPosition">
+          ${["지점장","이사","팀장","MP","비서"].map(position =>
+            `<option value="${position}" ${contact.position === position ? "selected" : ""}>${position}</option>`
+          ).join("")}
+        </select></div>
+        <div class="field"><label>전화번호</label><input id="editContactPhone" type="tel" value="${escapeHtml(contact.phone)}"></div>
+        <div class="field"><label>메모 (선택)</label><input id="editContactMemo" type="text" value="${escapeHtml(contact.memo || "")}"></div>
+        <button class="btn" onclick="updateContact('${contact.id}')">수정 저장</button>
+        <div id="msg"></div>
+      </div>
+    </div>`;
+}
+
+async function updateContact(contactId) {
+  const name = document.getElementById("editContactName").value.trim();
+  const phone = document.getElementById("editContactPhone").value.trim();
+  if (!name) return setMsg("이름을 입력해 주세요.");
+  if (!phone) return setMsg("전화번호를 입력해 주세요.");
+
+  const { error } = await client.from("contacts").update({
+    name,
+    position: document.getElementById("editContactPosition").value,
+    phone,
+    memo: document.getElementById("editContactMemo").value.trim() || null,
+    updated_at: new Date().toISOString()
+  }).eq("id", contactId);
+  if (error) return setMsg("연락처 수정 실패: " + escapeHtml(error.message));
+  alert("연락처가 수정되었습니다.");
+  await contactsPage();
+}
+
+async function deleteContact(contactId) {
+  const profile = await getCurrentProfile();
+  if (!canManageContacts(profile)) return alert("연락처 삭제 권한이 없습니다.");
+  const contact = contactDirectoryCache.find(item => item.id === contactId);
+  if (!confirm(`${contact?.name || "이"} 연락처를 삭제하시겠습니까?`)) return;
+
+  const { error } = await client.from("contacts").delete().eq("id", contactId);
+  if (error) return alert("연락처 삭제 실패:\n" + error.message);
+  alert("연락처가 삭제되었습니다.");
+  await contactsPage();
 }
 
 
