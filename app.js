@@ -378,101 +378,174 @@ async function updatePassword() {
 // 메인
 // =====================================================
 
-function home(profile) {
-  const adminButton =
-    profile.role === "admin"
-      ? `
-        <button
-          class="btn"
-          onclick="adminPage()"
-        >
-          관리자
-        </button>
-      `
-      : "";
+async function home(profile) {
+  const scheduleUrl =
+    "https://docs.google.com/spreadsheets/d/1h_mwY9v-YdpEknbme16u1-kvY618_QJN/edit?gid=1579963286#gid=1579963286";
+
+  const [
+    { count: recordingCount },
+    { count: resourceCount },
+    { count: employeeCount },
+    { count: noticeCount },
+    { data: recentRecordings },
+    { data: recentNotices }
+  ] = await Promise.all([
+    client.from("recordings").select("id", { count: "exact", head: true }),
+    client.from("resources").select("id", { count: "exact", head: true }),
+    client.from("profiles").select("id", { count: "exact", head: true }).eq("status", "approved"),
+    client.from("notices").select("id", { count: "exact", head: true }),
+    client.from("recordings").select("id, short_title, owner_name, consultation_date, created_at")
+      .order("consultation_date", { ascending: false }).order("created_at", { ascending: false }).limit(4),
+    client.from("notices").select("id, title, content, is_pinned, created_at")
+      .order("is_pinned", { ascending: false }).order("created_at", { ascending: false }).limit(4)
+  ]);
+
+  const today = new Date();
+  const dateText = today.toLocaleDateString("ko-KR", {
+    year: "numeric", month: "2-digit", day: "2-digit", weekday: "short"
+  });
+  const timeText = today.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
+
+  const noticeRows = (recentNotices || []).length
+    ? recentNotices.map(item => `
+        <button class="dashboard-list-row dashboard-search-item" data-search="${escapeHtml(item.title + " " + (item.content || ""))}"
+          onclick="noticeDetail('${item.id}')">
+          <span class="dashboard-badge ${item.is_pinned ? "important" : ""}">${item.is_pinned ? "필독" : "안내"}</span>
+          <span class="dashboard-list-main">
+            <b>${escapeHtml(item.title)}</b>
+            <small>${escapeHtml(item.content || "공지 내용을 확인해 주세요.")}</small>
+          </span>
+          <time>${new Date(item.created_at).toLocaleDateString("ko-KR")}</time>
+        </button>`).join("")
+    : `<div class="dashboard-empty">등록된 공지사항이 없습니다.</div>`;
+
+  const recordingRows = (recentRecordings || []).length
+    ? recentRecordings.map(item => `
+        <button class="dashboard-list-row recording-row dashboard-search-item"
+          data-search="${escapeHtml(item.short_title + " " + (item.owner_name || ""))}"
+          onclick="recordingDetail('${item.id}')">
+          <span class="play-icon">▶</span>
+          <span class="dashboard-list-main">
+            <b>${escapeHtml(item.short_title)}</b>
+            <small>${escapeHtml(item.owner_name || "등록자 미상")}</small>
+          </span>
+          <time>${escapeHtml(item.consultation_date || "")}</time>
+        </button>`).join("")
+    : `<div class="dashboard-empty">등록된 녹취록이 없습니다.</div>`;
+
+  const adminMenu = profile.role === "admin"
+    ? `<button class="sidebar-admin" onclick="adminPage()">🛡️ 관리자 메뉴 <span>›</span></button>`
+    : "";
 
   app.innerHTML = `
-    <div class="wrap">
-
-      <div class="top">
-
-        <div class="brand" onclick="goHome()" role="button" tabindex="0" title="메인으로" style="cursor:pointer;" onkeydown="if(event.key === 'Enter' || event.key === ' '){ event.preventDefault(); goHome(); }">
-          THE ONE <b>SPACE</b>
+    <div class="dashboard-shell">
+      <aside class="dashboard-sidebar">
+        <div class="sidebar-branch">
+          <div class="aia-mark">AIA</div>
+          <div><small>AIA PREMIER PARTNERS</small><strong>더원지점</strong></div>
         </div>
-
-        <div>
-          ${adminButton}
-
-          <button
-            class="btn secondary"
-            onclick="logout()"
-          >
-            로그아웃
-          </button>
+        <nav class="sidebar-nav" aria-label="주요 메뉴">
+          <button class="active" onclick="goHome()"><span>⌂</span> 대시보드</button>
+          <button onclick="recordingsPage()"><span>◉</span> 녹취록 관리</button>
+          <button onclick="resourcesPage()"><span>▰</span> 자료실</button>
+          <button onclick="noticesPage()"><span>◀</span> 공지사항</button>
+          <button onclick="window.open('${scheduleUrl}', '_blank')"><span>▣</span> 일정</button>
+        </nav>
+        ${adminMenu}
+        <div class="sidebar-footer">
+          <b>THE ONE SPACE</b>
+          <small>AIA Premier Partners 더원지점</small>
+          <button onclick="logout()">로그아웃</button>
         </div>
+      </aside>
 
-      </div>
+      <main class="dashboard-main">
+        <header class="dashboard-header">
+          <div class="dashboard-brand" onclick="goHome()" role="button" tabindex="0">
+            THE <b>ONE</b> SPACE
+            <small>Connect. Share. Grow.</small>
+          </div>
+          <label class="dashboard-search">
+            <span>⌕</span>
+            <input id="dashboardSearch" type="search" placeholder="메인 화면에서 검색" oninput="filterDashboardItems()">
+          </label>
+          <div class="dashboard-user">
+            <span class="user-avatar">${escapeHtml((profile.name || "더원").slice(0, 1))}</span>
+            <div><b>${escapeHtml(profile.name)}</b><small>${escapeHtml(profile.position || "직원")}</small></div>
+          </div>
+        </header>
 
-      <section class="hero">
+        <div class="dashboard-content">
+          <section class="dashboard-top-grid">
+            <article class="welcome-card">
+              <div>
+                <h1>${escapeHtml(profile.name)}님, 환영합니다! <span>👋</span></h1>
+                <p>오늘도 함께 성장하는 하루 되세요.</p>
+                <div class="welcome-date"><span>▣ ${dateText}</span><span>◷ ${timeText}</span></div>
+              </div>
+              <div class="growth-art" aria-hidden="true"><span></span><span></span><span></span><i>★</i></div>
+            </article>
+            <article class="summary-card pink" onclick="recordingsPage()">
+              <span class="summary-icon">🎙</span><p>전체 녹취록</p>
+              <strong>${recordingCount || 0}<small>건</small></strong><em>상담 녹취를 확인해 보세요.</em>
+            </article>
+            <article class="summary-card blue" onclick="resourcesPage()">
+              <span class="summary-icon">▰</span><p>자료실 자료</p>
+              <strong>${resourceCount || 0}<small>건</small></strong><em>업무 자료를 확인해 보세요.</em>
+            </article>
+            <article class="summary-card green">
+              <span class="summary-icon">♙</span><p>전체 직원 수</p>
+              <strong>${employeeCount || 0}<small>명</small></strong><em>승인된 지점원 기준</em>
+            </article>
+            <article class="summary-card yellow" onclick="noticesPage()">
+              <span class="summary-icon">☆</span><p>공지사항</p>
+              <strong>${noticeCount || 0}<small>건</small></strong><em>새로운 소식을 확인하세요.</em>
+            </article>
+          </section>
 
-        <div class="muted">
-          AIA 프리미어파트너스 더원지점
+          <section class="dashboard-middle-grid">
+            <article class="dashboard-panel notices-panel">
+              <div class="panel-title"><h2>공지사항</h2><button onclick="noticesPage()">전체 보기 ›</button></div>
+              <div>${noticeRows}</div>
+            </article>
+            <article class="dashboard-panel recordings-panel">
+              <div class="panel-title"><h2>최근 녹취록</h2><button onclick="recordingsPage()">전체 보기 ›</button></div>
+              <div>${recordingRows}</div>
+            </article>
+            <article class="dashboard-panel quick-panel">
+              <div class="panel-title"><h2>바로가기</h2></div>
+              <div class="quick-grid">
+                <button onclick="newRecordingForm()"><span>🎙</span>녹취록 등록</button>
+                <button onclick="newResourceForm()"><span>▰</span>자료실 업로드</button>
+                <button onclick="noticesPage()"><span>📢</span>공지사항</button>
+                <button onclick="window.open('${scheduleUrl}', '_blank')"><span>▣</span>일정 확인</button>
+                <button onclick="recordingsPage()"><span>⌕</span>녹취록 찾기</button>
+                ${profile.role === "admin"
+                  ? `<button onclick="adminPage()"><span>♙</span>직원 관리</button>`
+                  : `<button onclick="resourcesPage()"><span>⌕</span>자료 찾기</button>`}
+              </div>
+            </article>
+          </section>
+
+          <p id="dashboardSearchEmpty" class="dashboard-search-empty" hidden>검색 결과가 없습니다.</p>
         </div>
+      </main>
+    </div>`;
+}
 
-        <h1>Connect. Share. Grow.</h1>
-
-        <p>
-          ${escapeHtml(profile.name)}님, 환영합니다.
-        </p>
-
-      </section>
-
-      <div class="grid">
-
-        <div
-          class="card"
-          onclick="recordingsPage()"
-          style="cursor:pointer;"
-        >
-          <div class="icon">🎙️</div>
-          <h3>녹취록</h3>
-          <p>상담 녹취와 내용을 확인합니다.</p>
-        </div>
-
-        <div
-  class="card"
-  onclick="window.open('https://docs.google.com/spreadsheets/d/1h_mwY9v-YdpEknbme16u1-kvY618_QJN/edit?gid=1579963286#gid=1579963286', '_blank')"
-  style="cursor:pointer;"
->
-  <div class="icon">📅</div>
-  <h3>스케줄</h3>
-  <p>지점 일정을 확인하고 입력합니다.</p>
-</div>
-
-        <div
-  class="card"
-  onclick="noticesPage()"
-  style="cursor:pointer;"
->
-  <div class="icon">📢</div>
-  <h3>공지사항</h3>
-  <p>지점 공지를 확인합니다.</p>
-</div>
-
-        <div
-          class="card"
-          onclick="resourcesPage()"
-          style="cursor:pointer;"
-        >
-          <div class="icon">📁</div>
-          <h3>자료실</h3>
-          <p>공유 자료를 확인합니다.</p>
-        </div>
-
-      </div>
-
-    </div>
-  `;
+function filterDashboardItems() {
+  const input = document.getElementById("dashboardSearch");
+  if (!input) return;
+  const query = input.value.trim().toLowerCase();
+  const items = Array.from(document.querySelectorAll(".dashboard-search-item"));
+  let visible = 0;
+  items.forEach(item => {
+    const show = !query || (item.dataset.search || "").toLowerCase().includes(query);
+    item.style.display = show ? "" : "none";
+    if (show) visible += 1;
+  });
+  const empty = document.getElementById("dashboardSearchEmpty");
+  if (empty) empty.hidden = !query || visible > 0;
 }
 
 
