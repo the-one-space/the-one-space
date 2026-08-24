@@ -573,7 +573,7 @@ async function home(profile) {
           <button onclick="recordingsPage()"><span>◉</span> 녹취록 관리</button>
           <button onclick="resourcesPage()"><span>▰</span> 자료실</button>
           <button onclick="noticesPage()"><span>◀</span> 공지사항</button>
-          <button onclick="window.open('${scheduleUrl}', '_blank')"><span>▣</span> 일정</button>
+          <button onclick="window.open('${scheduleUrl}', '_blank')"><span>▣</span> 일정</button>\n          <button onclick="installApp()"><span>⇩</span> 앱 설치</button>
         </nav>
         ${adminMenu}
         <div class="sidebar-footer">
