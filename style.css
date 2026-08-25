@@ -182,3 +182,9 @@ body:has(> #app > .wrap),body:has(> #app > .auth){background:#f4f7fb;color:#142b
   .contact-grid{grid-template-columns:1fr}.contact-card{padding:17px!important}.contact-avatar{width:48px;height:48px;border-radius:15px}
   .contact-manage{flex-direction:column}.contact-manage .btn{padding:6px 8px}
 }
+
+/* Main PWA install button */
+.pwa-install-fab{position:fixed;right:24px;bottom:24px;z-index:50;border:0;border-radius:18px;padding:13px 18px;background:linear-gradient(135deg,#e21b50,#c90d3e);color:#fff;font:inherit;font-weight:800;box-shadow:0 10px 28px rgba(201,13,62,.3);display:flex;align-items:center;gap:8px;cursor:pointer}
+.pwa-install-fab span{font-size:21px}.pwa-install-fab:hover{transform:translateY(-2px)}
+@media(max-width:850px){.pwa-install-fab{right:15px;bottom:18px;padding:12px 15px;border-radius:16px}}
+@media(display-mode:standalone){.pwa-install-fab{display:none!important}}
