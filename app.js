@@ -301,6 +301,101 @@ function signupForm() {
 }
 
 
+
+async function myProfilePage() {
+  const profile = await getCurrentProfile();
+  const user = await getCurrentUser();
+  if (!profile || !user || profile.status !== "approved") {
+    authScreen();
+    return;
+  }
+
+  const birthdayDigits = String(profile.birthday || "").replace(/\D/g, "");
+  const positions = ["지점장", "이사", "팀장", "MP", "비서"]
+    .map(position => `<option value="${position}" ${profile.position === position ? "selected" : ""}>${position}</option>`)
+    .join("");
+
+  app.innerHTML = `
+    <div class="wrap">
+      <div class="top">
+        <div class="brand" onclick="goHome()" role="button" tabindex="0" title="메인으로" style="cursor:pointer;">THE ONE <b>SPACE</b></div>
+        <button class="btn secondary" onclick="goHome()">메인으로</button>
+      </div>
+      <section class="hero">
+        <div class="muted">MY PROFILE</div>
+        <h1>내 정보 수정</h1>
+        <p>내 이름, 연락처, 생년월일과 직급을 수정할 수 있습니다.</p>
+      </section>
+      <div class="auth profile-edit-card">
+        <div class="field">
+          <label>이메일</label>
+          <input type="email" value="${escapeHtml(user.email || "")}" disabled>
+          <small class="muted">이메일은 로그인 계정이라 변경할 수 없습니다.</small>
+        </div>
+        <div class="field">
+          <label>이름</label>
+          <input id="profileName" type="text" value="${escapeHtml(profile.name || "")}">
+        </div>
+        <div class="field">
+          <label>전화번호</label>
+          <input id="profilePhone" type="tel" inputmode="tel" value="${escapeHtml(profile.phone || "")}" placeholder="010-0000-0000">
+        </div>
+        <div class="field">
+          <label>생년월일</label>
+          <input id="profileBirthday" type="text" inputmode="numeric" maxlength="8"
+            value="${birthdayDigits}" placeholder="예: 19920319" autocomplete="bday">
+        </div>
+        <div class="field">
+          <label>직급</label>
+          <select id="profilePosition">${positions}</select>
+        </div>
+        <button class="btn" onclick="saveMyProfile()">수정 내용 저장</button>
+      </div>
+    </div>`;
+}
+
+function normalizeBirthdayDigits(value) {
+  const digits = String(value || "").replace(/\D/g, "");
+  if (!/^\d{8}$/.test(digits)) return "";
+  const year = Number(digits.slice(0, 4));
+  const month = Number(digits.slice(4, 6));
+  const day = Number(digits.slice(6, 8));
+  const parsed = new Date(year, month - 1, day);
+  if (parsed.getFullYear() !== year || parsed.getMonth() !== month - 1 || parsed.getDate() !== day) return "";
+  return digits.slice(0, 4) + "-" + digits.slice(4, 6) + "-" + digits.slice(6, 8);
+}
+
+async function saveMyProfile() {
+  const name = document.getElementById("profileName").value.trim();
+  const phone = document.getElementById("profilePhone").value.trim();
+  const birthday = normalizeBirthdayDigits(document.getElementById("profileBirthday").value);
+  const position = document.getElementById("profilePosition").value;
+
+  if (!name || !phone) {
+    alert("이름과 전화번호를 입력해 주세요.");
+    return;
+  }
+  if (!birthday) {
+    alert("생년월일 8자리를 정확히 입력해 주세요. 예: 19920319");
+    return;
+  }
+
+  const { error } = await client.rpc("update_my_profile", {
+    new_name: name,
+    new_phone: phone,
+    new_birthday: birthday,
+    new_position: position
+  });
+
+  if (error) {
+    alert("내 정보를 저장하지 못했습니다.\n" + error.message);
+    return;
+  }
+
+  alert("내 정보가 수정되었습니다.");
+  await goHome();
+}
+
 // =====================================================
 // 로그인
 // =====================================================
@@ -632,7 +727,7 @@ async function home(profile) {
           <button onclick="recordingsPage()"><span>◉</span> 녹취록 관리</button>
           <button onclick="resourcesPage()"><span>▰</span> 자료실</button>
           <button onclick="noticesPage()"><span>◀</span> 공지사항</button>\n          <button onclick="contactsPage()"><span>♙</span> 지점원 연락처</button>\n          <button onclick="insuranceContactsPage()"><span>☎</span> 보험사 연락처</button>\n          <button onclick="insuranceManagersPage()"><span>♧</span> 보험사 담당자</button>
-          <button onclick="window.open('${scheduleUrl}', '_blank')"><span>▣</span> 일정</button>\n          <button onclick="installApp()"><span>⇩</span> 앱 설치</button>
+          <button onclick="window.open('${scheduleUrl}', '_blank')"><span>▣</span> 일정</button>\n          <button onclick="myProfilePage()"><span>♙</span> 내 정보 수정</button>\n          <button onclick="installApp()"><span>⇩</span> 앱 설치</button>
         </nav>
         ${adminMenu}
         <div class="sidebar-footer">
@@ -700,6 +795,7 @@ async function home(profile) {
                 <button onclick="noticesPage()"><span>📢</span>공지사항</button>\n                <button onclick="contactsPage()"><span>☎</span>지점원 연락처</button>\n                <button onclick="insuranceContactsPage()"><span>☏</span>보험사 연락처</button>\n                <button onclick="insuranceManagersPage()"><span>♧</span>보험사 담당자</button>
                 <button onclick="window.open('${scheduleUrl}', '_blank')"><span>▣</span>일정 확인</button>
                 <button onclick="recordingsPage()"><span>⌕</span>녹취록 찾기</button>
+                <button onclick="myProfilePage()"><span>👤</span>내 정보 수정</button>
                 ${profile.role === "admin"
                   ? `<button onclick="adminPage()"><span>♙</span>직원 관리</button>`
                   : `<button onclick="resourcesPage()"><span>⌕</span>자료 찾기</button>`}
