@@ -2893,7 +2893,7 @@ async function deleteContact(contactId) {
 // 자료실
 // =====================================================
 
-const RESOURCE_CATEGORIES = ["서식", "상품자료", "교육자료", "업무자료", "기타"];
+const RESOURCE_CATEGORIES = ["서식", "설계안 공유", "상품자료", "교육자료", "업무자료", "기타"];
 
 function formatFileSize(bytes) {
   const size = Number(bytes || 0);
