@@ -221,3 +221,5 @@ body:has(> #app > .wrap),body:has(> #app > .auth){background:#f4f7fb;color:#142b
   .insurer-manager-card .manager-contact-row{grid-template-columns:78px 1fr}
   .insurer-manager-card .manager-contact-row .manager-call-link{grid-column:1/-1;text-align:center;margin-top:4px}
 }
+
+.birthday-welcome-message{color:#c81446!important;font-weight:800!important;background:#fff1f5;border-radius:12px;padding:9px 13px;display:inline-block}
