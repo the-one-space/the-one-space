@@ -188,3 +188,12 @@ body:has(> #app > .wrap),body:has(> #app > .auth){background:#f4f7fb;color:#142b
 .pwa-install-fab span{font-size:21px}.pwa-install-fab:hover{transform:translateY(-2px)}
 @media(max-width:850px){.pwa-install-fab{right:15px;bottom:18px;padding:12px 15px;border-radius:16px}}
 @media(display-mode:standalone){.pwa-install-fab{display:none!important}}
+
+/* Resource category tabs */
+.resource-toolbar{display:block}.resource-toolbar>input{width:100%;margin-bottom:12px}
+.resource-category-tabs{display:flex;gap:8px;overflow-x:auto;padding:2px 1px 4px;scrollbar-width:none}
+.resource-category-tabs::-webkit-scrollbar{display:none}
+.resource-category-btn{flex:0 0 auto;border:1px solid #dce3ea;border-radius:999px;padding:9px 15px;background:#fff;color:#526678;font:inherit;font-size:13px;font-weight:750;cursor:pointer;transition:.18s}
+.resource-category-btn:hover{border-color:#e77b98;color:#b8103c}
+.resource-category-btn.active{border-color:#d71950;background:linear-gradient(135deg,#e21b50,#c90d3e);color:#fff;box-shadow:0 5px 13px rgba(201,13,62,.2)}
+@media(max-width:520px){.resource-category-tabs{margin:0 -2px}.resource-category-btn{padding:9px 14px}}
