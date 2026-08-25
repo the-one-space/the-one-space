@@ -261,6 +261,11 @@ function signupForm() {
       </div>
 
       <div class="field">
+        <label>전화번호</label>
+        <input id="phone" type="tel" inputmode="tel" placeholder="010-0000-0000">
+      </div>
+
+      <div class="field">
         <label>직급</label>
 
         <select id="position">
@@ -354,12 +359,15 @@ async function signup() {
   const pwValue =
     document.getElementById("pw").value;
 
+  const phoneValue =
+    document.getElementById("phone").value.trim();
+
   const positionValue =
     document.getElementById("position").value;
 
-  if (!nameValue || !emailValue || !pwValue) {
+  if (!nameValue || !emailValue || !pwValue || !phoneValue) {
     setMsg(
-      "이름, 이메일, 비밀번호를 모두 입력해 주세요."
+      "이름, 이메일, 비밀번호, 전화번호를 모두 입력해 주세요."
     );
     return;
   }
@@ -372,7 +380,8 @@ async function signup() {
       options: {
         data: {
           name: nameValue,
-          position: positionValue
+          position: positionValue,
+          phone: phoneValue
         }
       }
     });
