@@ -714,8 +714,7 @@ async function home(profile) {
     : `<div class="dashboard-empty">등록된 녹취록이 없습니다.</div>`;
 
   const adminMenu = profile.role === "admin"
-    ? `<button class="sidebar-admin" onclick="adminPage()">🛡️ 관리자 메뉴 <span>›</span></button>
-       <button class="sidebar-admin trash-admin" onclick="trashPage()">🗑️ 휴지통 <span>›</span></button>`
+    ? `<button class="sidebar-admin" onclick="adminPage()">🛡️ 관리자 메뉴 <span>›</span></button>`
     : "";
 
   app.innerHTML = `
@@ -1973,6 +1972,8 @@ async function adminPage() {
         <p>
           가입 신청을 확인하고 승인 또는 거절할 수 있습니다.
         </p>
+
+        <button class="btn secondary" onclick="trashPage()">🗑️ 휴지통 관리</button>
 
       </section>
 
