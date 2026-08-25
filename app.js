@@ -607,7 +607,7 @@ async function home(profile) {
         <header class="dashboard-header">
           <div class="dashboard-brand" onclick="goHome()" role="button" tabindex="0">
             THE <b>ONE</b> SPACE
-            <small>Connect. Share. Grow.</small>
+            <small>Connect. Share. Grow. <em>연결하고 · 나누고 · 함께 성장해요</em></small>
           </div>
           <label class="dashboard-search">
             <span>⌕</span>
