@@ -2896,7 +2896,7 @@ async function insuranceManagersPage() {
       <div class="insurer-contact-row manager-contact-row">
         <span>${escapeHtml(row.contact_role)}</span>
         <b>${escapeHtml(row.person_name)}</b>
-        ${row.phone ? `<a class="insurer-call-btn manager-call-link" href="tel:${row.phone.replace(/[^\\d+]/g, "")}">${escapeHtml(row.phone)} · 전화</a>` : ""}
+        ${row.phone ? `<a class="insurer-call-btn manager-call-link" href="tel:${row.phone.replace(/[^\d+]/g, "")}">${escapeHtml(row.phone)} · 전화</a>` : ""}
         ${row.note ? `<small>${escapeHtml(row.note)}</small>` : ""}
       </div>`
     ).join("");
