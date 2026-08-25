@@ -350,8 +350,54 @@ async function myProfilePage() {
           <select id="profilePosition">${positions}</select>
         </div>
         <button class="btn" onclick="saveMyProfile()">수정 내용 저장</button>
+        <button class="btn secondary profile-trash-btn" onclick="myTrashPage()">🗑️ 내 휴지통</button>
       </div>
     </div>`;
+}
+
+
+async function myTrashPage() {
+  const profile = await getCurrentProfile();
+  const user = await getCurrentUser();
+  if (!profile || !user || profile.status !== "approved") { authScreen(); return; }
+
+  const [a, b, n] = await Promise.all([
+    client.from("recordings").select("id,short_title,owner_name,deleted_at").eq("uploaded_by", user.id).not("deleted_at","is",null).order("deleted_at",{ascending:false}),
+    client.from("resources").select("id,title,uploader_name,deleted_at").eq("uploaded_by", user.id).not("deleted_at","is",null).order("deleted_at",{ascending:false}),
+    client.from("notices").select("id,title,deleted_at").eq("created_by", user.id).not("deleted_at","is",null).order("deleted_at",{ascending:false})
+  ]);
+
+  const items = []
+    .concat((a.data || []).map(x => ({type:"recording", id:x.id, title:x.short_title, deleted_at:x.deleted_at})))
+    .concat((b.data || []).map(x => ({type:"resource", id:x.id, title:x.title, deleted_at:x.deleted_at})))
+    .concat((n.data || []).map(x => ({type:"notice", id:x.id, title:x.title, deleted_at:x.deleted_at})))
+    .sort((x,y) => new Date(y.deleted_at) - new Date(x.deleted_at));
+
+  const cards = items.length ? items.map(x => {
+    const deleted = new Date(x.deleted_at);
+    const days = Math.max(1, 30 - Math.floor((Date.now() - deleted.getTime()) / 86400000));
+    return `<article class="card trash-card">
+      <div class="trash-card-head"><span>${trashTypeLabel(x.type)}</span><em>남은 기간 ${days}일</em></div>
+      <h3>${escapeHtml(x.title || "제목 없음")}</h3>
+      <p class="muted">삭제일: ${deleted.toLocaleString("ko-KR")}</p>
+      <div class="trash-actions"><button class="btn" onclick="restoreMyTrashItem('${x.type}','${x.id}')">내 자료 복원</button></div>
+    </article>`;
+  }).join("") : `<div class="card trash-empty"><span>🗑️</span><h3>내 휴지통이 비어 있습니다.</h3><p class="muted">내가 삭제한 항목은 30일 동안 이곳에 보관됩니다.</p></div>`;
+
+  app.innerHTML = `<div class="wrap">
+    <div class="top"><div class="brand" onclick="goHome()" style="cursor:pointer;">THE ONE <b>SPACE</b></div>
+      <button class="btn secondary" onclick="myProfilePage()">내 정보로</button></div>
+    <section class="hero"><div class="muted">MY TRASH</div><h1>내 휴지통</h1><p>내가 등록했다가 삭제한 항목을 직접 복원할 수 있습니다.</p></section>
+    <div class="trash-grid">${cards}</div>
+  </div>`;
+}
+
+async function restoreMyTrashItem(type, id) {
+  if (!confirm(trashTypeLabel(type) + "을(를) 원래 위치로 복원하시겠습니까?")) return;
+  const { error } = await client.rpc("restore_trash_item", { item_type:type, item_id:String(id) });
+  if (error) return alert("복원하지 못했습니다.\n" + error.message);
+  alert("내 자료가 복원되었습니다.");
+  await myTrashPage();
 }
 
 function normalizeBirthdayDigits(value) {
