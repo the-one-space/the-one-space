@@ -650,6 +650,9 @@ async function home(profile) {
 
           <p id="dashboardSearchEmpty" class="dashboard-search-empty" hidden>검색 결과가 없습니다.</p>
         </div>
+        <button class="pwa-install-fab" onclick="installApp()" aria-label="THE ONE 앱 설치">
+          <span>📲</span> 앱 설치
+        </button>
       </main>
     </div>`;
 }
