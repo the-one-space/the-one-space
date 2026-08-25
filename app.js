@@ -2751,42 +2751,6 @@ function callContact(contactId) {
   window.location.href = "tel:" + phone;
 }
 
-function escapeVcard(value) {
-  return String(value || "")
-    .replaceAll("\\", "\\\\")
-    .replaceAll("\n", "\\n")
-    .replaceAll(",", "\\,")
-    .replaceAll(";", "\\;");
-}
-
-function saveContactToPhone(contactId) {
-  const contact = contactDirectoryCache.find(item => item.id === contactId);
-  if (!contact) return;
-
-  const vcard = [
-    "BEGIN:VCARD",
-    "VERSION:3.0",
-    `FN:${escapeVcard(contact.name)}`,
-    `N:${escapeVcard(contact.name)};;;;`,
-    `TEL;TYPE=CELL:${escapeVcard(contact.phone)}`,
-    `ORG:${escapeVcard("AIA 프리미어파트너스 더원지점")}`,
-    `TITLE:${escapeVcard(contact.position)}`,
-    contact.memo ? `NOTE:${escapeVcard(contact.memo)}` : "",
-    "END:VCARD"
-  ].filter(Boolean).join("\r\n");
-
-  const blob = new Blob([vcard], { type: "text/vcard;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `${contact.name}.vcf`;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-  closeContactActions();
-}
-
 async function newContactForm() {
   const profile = await getCurrentProfile();
   if (!canManageContacts(profile)) return alert("관리자 또는 비서만 연락처를 등록할 수 있습니다.");
