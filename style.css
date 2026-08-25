@@ -223,3 +223,5 @@ body:has(> #app > .wrap),body:has(> #app > .auth){background:#f4f7fb;color:#142b
 }
 
 .birthday-welcome-message{color:#c81446!important;font-weight:800!important;background:#fff1f5;border-radius:12px;padding:9px 13px;display:inline-block}
+
+.profile-edit-card{max-width:620px;margin:24px auto}.profile-edit-card input:disabled{background:#f2f4f7;color:#7f8994;cursor:not-allowed}.profile-edit-card .field small{display:block;margin-top:6px;font-size:12px}
