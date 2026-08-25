@@ -2683,7 +2683,7 @@ async function contactsPage() {
       <section class="hero">
         <div class="muted">CONTACT DIRECTORY</div>
         <h1>지점원 연락처</h1>
-        <p>지점원 연락처를 검색하고 전화하거나 휴대폰에 저장할 수 있습니다.</p>
+        <p>지점원 연락처를 검색하고 바로 전화할 수 있습니다.</p>
         ${canManage ? `<button class="btn" onclick="newContactForm()">+ 연락처 등록</button>` : ""}
       </section>
 
@@ -2724,7 +2724,6 @@ function showContactActions(contactId) {
         <p>${escapeHtml(contact.phone)}</p>
         <div class="contact-action-buttons">
           <button class="btn" onclick="callContact('${contact.id}')">📞 전화하기</button>
-          <button class="btn secondary" onclick="saveContactToPhone('${contact.id}')">👤 연락처에 저장</button>
           <button class="contact-cancel" onclick="closeContactActions()">취소</button>
         </div>
       </div>
