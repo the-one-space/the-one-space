@@ -810,6 +810,63 @@ async function home(profile) {
         </button>
       </main>
     </div>`;
+
+  const popupNotice = (recentNotices || []).find(item => item.is_pinned);
+  if (popupNotice) {
+    setTimeout(() => showNoticePopup(popupNotice), 180);
+  }
+}
+
+
+function noticePopupTodayKey() {
+  const now = new Date();
+  return now.getFullYear() + "-" +
+    String(now.getMonth() + 1).padStart(2, "0") + "-" +
+    String(now.getDate()).padStart(2, "0");
+}
+
+function showNoticePopup(notice) {
+  if (!notice || document.getElementById("noticePopup")) return;
+  const hideKey = "notice-popup-hide-" + notice.id;
+  const closeKey = "notice-popup-session-" + notice.id;
+  if (localStorage.getItem(hideKey) === noticePopupTodayKey()) return;
+  if (sessionStorage.getItem(closeKey) === "closed") return;
+
+  document.body.insertAdjacentHTML("beforeend", `
+    <div id="noticePopup" class="notice-popup-backdrop">
+      <section class="notice-popup" role="dialog" aria-modal="true" aria-labelledby="noticePopupTitle">
+        <div class="notice-popup-top">
+          <span>📌 IMPORTANT NOTICE</span>
+          <button onclick="closeNoticePopup('${notice.id}')" aria-label="닫기">×</button>
+        </div>
+        <div class="notice-popup-body">
+          <div class="notice-popup-icon">📢</div>
+          <h2 id="noticePopupTitle">${escapeHtml(notice.title)}</h2>
+          <p>${escapeHtml(notice.content || "").replace(/\n/g, "<br>")}</p>
+        </div>
+        <div class="notice-popup-actions">
+          <button class="notice-popup-today" onclick="hideNoticePopupToday('${notice.id}')">오늘 하루 보지 않기</button>
+          <button class="btn secondary" onclick="closeNoticePopup('${notice.id}')">닫기</button>
+          <button class="btn" onclick="openNoticeFromPopup('${notice.id}')">자세히 보기</button>
+        </div>
+      </section>
+    </div>`);
+}
+
+function closeNoticePopup(noticeId) {
+  sessionStorage.setItem("notice-popup-session-" + noticeId, "closed");
+  document.getElementById("noticePopup")?.remove();
+}
+
+function hideNoticePopupToday(noticeId) {
+  localStorage.setItem("notice-popup-hide-" + noticeId, noticePopupTodayKey());
+  document.getElementById("noticePopup")?.remove();
+}
+
+async function openNoticeFromPopup(noticeId) {
+  sessionStorage.setItem("notice-popup-session-" + noticeId, "closed");
+  document.getElementById("noticePopup")?.remove();
+  await noticeDetail(noticeId);
 }
 
 function filterDashboardItems() {
