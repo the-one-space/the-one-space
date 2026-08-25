@@ -512,8 +512,15 @@ async function updatePassword() {
 // =====================================================
 
 async function home(profile) {
+  const scheduleSheetId = "1h_mwY9v-YdpEknbme16u1-kvY618_QJN";
+  const scheduleTabs = {
+    8: "1296088469",
+    9: "1653002200"
+  };
+  const currentMonth = new Date().getMonth() + 1;
+  const scheduleGid = scheduleTabs[currentMonth] || scheduleTabs[9];
   const scheduleUrl =
-    "https://docs.google.com/spreadsheets/d/1h_mwY9v-YdpEknbme16u1-kvY618_QJN/edit?pli=1&gid=1296088469#gid=1296088469";
+    `https://docs.google.com/spreadsheets/d/${scheduleSheetId}/edit?pli=1&gid=${scheduleGid}#gid=${scheduleGid}`;
 
   const [
     { count: recordingCount },
