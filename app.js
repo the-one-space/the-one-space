@@ -266,6 +266,11 @@ function signupForm() {
       </div>
 
       <div class="field">
+        <label>생일</label>
+        <input id="birthday" type="date">
+      </div>
+
+      <div class="field">
         <label>직급</label>
 
         <select id="position">
@@ -362,12 +367,15 @@ async function signup() {
   const phoneValue =
     document.getElementById("phone").value.trim();
 
+  const birthdayValue =
+    document.getElementById("birthday").value;
+
   const positionValue =
     document.getElementById("position").value;
 
-  if (!nameValue || !emailValue || !pwValue || !phoneValue) {
+  if (!nameValue || !emailValue || !pwValue || !phoneValue || !birthdayValue) {
     setMsg(
-      "이름, 이메일, 비밀번호, 전화번호를 모두 입력해 주세요."
+      "이름, 이메일, 비밀번호, 전화번호, 생일을 모두 입력해 주세요."
     );
     return;
   }
@@ -381,7 +389,8 @@ async function signup() {
         data: {
           name: nameValue,
           position: positionValue,
-          phone: phoneValue
+          phone: phoneValue,
+          birthday: birthdayValue
         }
       }
     });
@@ -549,6 +558,15 @@ async function home(profile) {
   });
   const timeText = today.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
 
+
+  const birthdayParts = String(profile.birthday || "").split("-");
+  const isBirthdayToday =
+    Number(birthdayParts[1]) === today.getMonth() + 1 &&
+    Number(birthdayParts[2]) === today.getDate();
+  const welcomeMessage = isBirthdayToday
+    ? "🎉 생일을 진심으로 축하드려요! 오늘 더 행복한 하루 보내세요."
+    : "오늘도 함께 성장하는 하루 되세요.";
+
   const noticeRows = (recentNotices || []).length
     ? recentNotices.map(item => `
         <button class="dashboard-list-row dashboard-search-item" data-search="${escapeHtml(item.title + " " + (item.content || ""))}"
@@ -620,7 +638,7 @@ async function home(profile) {
             <article class="welcome-card">
               <div>
                 <h1>${escapeHtml(profile.name)}님, 환영합니다! <span>👋</span></h1>
-                <p>오늘도 함께 성장하는 하루 되세요.</p>
+                <p class="${isBirthdayToday ? "birthday-welcome-message" : ""}">${welcomeMessage}</p>
                 <div class="welcome-date"><span>▣ ${dateText}</span><span>◷ ${timeText}</span></div>
               </div>
               <div class="growth-art" aria-hidden="true"><span></span><span></span><span></span><i>★</i></div>
@@ -1781,6 +1799,9 @@ async function adminPage() {
               ${escapeHtml(p.email || "")}
             </p>
 
+            <p class="muted">🎂 생일: ${p.birthday ? escapeHtml(p.birthday) : "미입력"}</p>
+            <button class="btn secondary" onclick="editUserBirthday('${p.id}', '${p.birthday || ""}')">생일 입력·수정</button>
+
           </div>
         `).join("")
       : `
@@ -1843,6 +1864,24 @@ async function adminPage() {
 // =====================================================
 // 직원 승인 / 거절
 // =====================================================
+
+
+async function editUserBirthday(userId, currentBirthday) {
+  const value = prompt("생일을 YYYY-MM-DD 형식으로 입력해 주세요.", currentBirthday || "");
+  if (value === null) return;
+  const birthday = value.trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(birthday) || Number.isNaN(new Date(birthday + "T00:00:00").getTime())) {
+    alert("생일을 YYYY-MM-DD 형식으로 정확히 입력해 주세요.");
+    return;
+  }
+  const { error } = await client.from("profiles").update({ birthday }).eq("id", userId);
+  if (error) {
+    alert("생일을 저장하지 못했습니다.\n" + error.message);
+    return;
+  }
+  alert("생일이 저장되었습니다.");
+  await adminPage();
+}
 
 async function changeUserStatus(
   userId,
