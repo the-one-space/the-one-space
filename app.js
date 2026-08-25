@@ -659,13 +659,15 @@ async function home(profile) {
     { data: recentRecordings },
     { data: recentNotices }
   ] = await Promise.all([
-    client.from("recordings").select("id", { count: "exact", head: true }),
-    client.from("resources").select("id", { count: "exact", head: true }),
+    client.from("recordings").select("id", { count: "exact", head: true }).is("deleted_at", null),
+    client.from("resources").select("id", { count: "exact", head: true }).is("deleted_at", null),
     client.from("profiles").select("id", { count: "exact", head: true }).eq("status", "approved"),
-    client.from("notices").select("id", { count: "exact", head: true }),
+    client.from("notices").select("id", { count: "exact", head: true }).is("deleted_at", null),
     client.from("recordings").select("id, short_title, owner_name, consultation_date, created_at")
+      .is("deleted_at", null)
       .order("consultation_date", { ascending: false }).order("created_at", { ascending: false }).limit(4),
     client.from("notices").select("id, title, content, is_pinned, created_at")
+      .is("deleted_at", null)
       .order("is_pinned", { ascending: false }).order("created_at", { ascending: false }).limit(4)
   ]);
 
@@ -712,7 +714,8 @@ async function home(profile) {
     : `<div class="dashboard-empty">등록된 녹취록이 없습니다.</div>`;
 
   const adminMenu = profile.role === "admin"
-    ? `<button class="sidebar-admin" onclick="adminPage()">🛡️ 관리자 메뉴 <span>›</span></button>`
+    ? `<button class="sidebar-admin" onclick="adminPage()">🛡️ 관리자 메뉴 <span>›</span></button>
+       <button class="sidebar-admin trash-admin" onclick="trashPage()">🗑️ 휴지통 <span>›</span></button>`
     : "";
 
   app.innerHTML = `
@@ -901,6 +904,7 @@ async function recordingsPage() {
     await client
       .from("recordings")
       .select("*")
+      .is("deleted_at", null)
       .order("consultation_date", {
         ascending: false
       })
@@ -1351,6 +1355,7 @@ async function recordingDetail(recordingId) {
       .from("recordings")
       .select("*")
       .eq("id", recordingId)
+      .is("deleted_at", null)
       .single();
 
   if (error || !recording) {
@@ -1752,121 +1757,77 @@ async function openRecordingFile(filePath) {
 // =====================================================
 
 async function deleteRecording(recordingId) {
-  const user = await getCurrentUser();
-  const profile = await getCurrentProfile();
-
-  if (!user || !profile) {
-    authScreen();
-    return;
-  }
-
-  const {
-    data: recording,
-    error: recordingLoadError
-  } =
-    await client
-      .from("recordings")
-      .select("*")
-      .eq("id", recordingId)
-      .single();
-
-  if (recordingLoadError || !recording) {
-    alert("녹취록을 찾을 수 없습니다.");
-    return;
-  }
-
-  const canManage =
-    profile.role === "admin" ||
-    recording.uploaded_by === user.id;
-
-  if (!canManage) {
-    alert("본인이 등록한 녹취록만 삭제할 수 있습니다.");
-    return;
-  }
-
-  const confirmed =
-    confirm(
-      "정말 삭제하시겠습니까?\n\n" +
-      "녹취록과 음성파일이 모두 삭제되며 복구할 수 없습니다."
-    );
-
-  if (!confirmed) {
-    return;
-  }
-
-  const {
-    data: files,
-    error: filesError
-  } =
-    await client
-      .from("recording_files")
-      .select("file_path")
-      .eq("recording_id", recordingId);
-
-  if (filesError) {
-    alert(
-      "파일 목록 확인에 실패했습니다.\n" +
-      filesError.message
-    );
-    return;
-  }
-
-  const filePaths =
-    (files || [])
-      .map(item => item.file_path)
-      .filter(Boolean);
-
-  // 실제 Storage 파일 삭제
-  if (filePaths.length > 0) {
-    const { error: storageError } =
-      await client.storage
-        .from("recordings")
-        .remove(filePaths);
-
-    if (storageError) {
-      alert(
-        "음성파일 삭제에 실패했습니다.\n" +
-        storageError.message
-      );
-      return;
-    }
-  }
-
-  // 파일정보 삭제
-  const { error: fileDbError } =
-    await client
-      .from("recording_files")
-      .delete()
-      .eq("recording_id", recordingId);
-
-  if (fileDbError) {
-    alert(
-      "파일정보 삭제에 실패했습니다.\n" +
-      fileDbError.message
-    );
-    return;
-  }
-
-  // 녹취록 삭제
-  const { error: recordingError } =
-    await client
-      .from("recordings")
-      .delete()
-      .eq("id", recordingId);
-
-  if (recordingError) {
-    alert(
-      "녹취록 삭제에 실패했습니다.\n" +
-      recordingError.message
-    );
-    return;
-  }
-
-  alert("녹취록이 삭제되었습니다.");
-
+  if (!confirm("이 녹취록을 휴지통으로 이동하시겠습니까?\n30일 동안 복원할 수 있습니다.")) return;
+  const { error } = await client.rpc("move_item_to_trash", { item_type: "recording", item_id: String(recordingId) });
+  if (error) return alert("휴지통 이동에 실패했습니다.\n" + error.message);
+  alert("녹취록을 휴지통으로 이동했습니다.");
   await recordingsPage();
 }
 
+
+function trashTypeLabel(type) { return type === "recording" ? "녹취록" : type === "resource" ? "자료실" : "공지사항"; }
+
+async function trashPage() {
+  const profile = await getCurrentProfile();
+  if (!profile || profile.role !== "admin" || profile.status !== "approved") {
+    alert("관리자만 휴지통을 이용할 수 있습니다."); return;
+  }
+  const [a,b,n] = await Promise.all([
+    client.from("recordings").select("id,short_title,owner_name,deleted_at").not("deleted_at","is",null).order("deleted_at",{ascending:false}),
+    client.from("resources").select("id,title,uploader_name,deleted_at").not("deleted_at","is",null).order("deleted_at",{ascending:false}),
+    client.from("notices").select("id,title,deleted_at").not("deleted_at","is",null).order("deleted_at",{ascending:false})
+  ]);
+  let items=[]
+    .concat((a.data||[]).map(x=>({type:"recording",id:x.id,title:x.short_title,owner:x.owner_name,deleted_at:x.deleted_at})))
+    .concat((b.data||[]).map(x=>({type:"resource",id:x.id,title:x.title,owner:x.uploader_name,deleted_at:x.deleted_at})))
+    .concat((n.data||[]).map(x=>({type:"notice",id:x.id,title:x.title,owner:"",deleted_at:x.deleted_at})))
+    .sort((x,y)=>new Date(y.deleted_at)-new Date(x.deleted_at));
+
+  const expired=items.filter(x=>Date.now()-new Date(x.deleted_at).getTime()>=30*86400000);
+  for(const x of expired) await permanentlyDeleteTrashItem(x.type,x.id,true);
+  if(expired.length) items=items.filter(x=>!expired.includes(x));
+
+  const cards=items.length?items.map(x=>{
+    const deleted=new Date(x.deleted_at);
+    const days=Math.max(1,30-Math.floor((Date.now()-deleted.getTime())/86400000));
+    return `<article class="card trash-card">
+      <div class="trash-card-head"><span>${trashTypeLabel(x.type)}</span><em>남은 기간 ${days}일</em></div>
+      <h3>${escapeHtml(x.title||"제목 없음")}</h3>
+      ${x.owner?`<p class="muted">등록자: ${escapeHtml(x.owner)}</p>`:""}
+      <p class="muted">삭제일: ${deleted.toLocaleString("ko-KR")}</p>
+      <div class="trash-actions"><button class="btn" onclick="restoreTrashItem('${x.type}','${x.id}')">복원</button>
+      <button class="btn secondary danger" onclick="permanentlyDeleteTrashItem('${x.type}','${x.id}')">영구 삭제</button></div>
+    </article>`;
+  }).join(""):`<div class="card trash-empty"><span>🗑️</span><h3>휴지통이 비어 있습니다.</h3><p class="muted">삭제한 항목은 30일 동안 보관됩니다.</p></div>`;
+
+  app.innerHTML=`<div class="wrap"><div class="top"><div class="brand" onclick="goHome()" style="cursor:pointer;">THE ONE <b>SPACE</b></div>
+    <button class="btn secondary" onclick="goHome()">메인으로</button></div>
+    <section class="hero"><div class="muted">TRASH BIN</div><h1>휴지통</h1><p>삭제한 녹취록·자료·공지를 30일 동안 보관합니다.</p></section>
+    <div class="trash-grid">${cards}</div></div>`;
+}
+
+async function restoreTrashItem(type,id){
+  if(!confirm(trashTypeLabel(type)+"을(를) 복원하시겠습니까?"))return;
+  const {error}=await client.rpc("restore_trash_item",{item_type:type,item_id:String(id)});
+  if(error)return alert("복원하지 못했습니다.\n"+error.message);
+  alert("복원되었습니다."); await trashPage();
+}
+
+async function permanentlyDeleteTrashItem(type,id,automatic=false){
+  if(!automatic&&!confirm("영구 삭제하면 복구할 수 없습니다.\\n정말 삭제하시겠습니까?"))return false;
+  if(type==="recording"||type==="resource"){
+    const table=type==="recording"?"recording_files":"resource_files";
+    const key=type==="recording"?"recording_id":"resource_id";
+    const bucket=type==="recording"?"recordings":"resources";
+    const {data,error}=await client.from(table).select("file_path").eq(key,id);
+    if(error){if(!automatic)alert("첨부 파일 확인 실패\\n"+error.message);return false}
+    const paths=(data||[]).map(x=>x.file_path).filter(Boolean);
+    if(paths.length){const {error:e}=await client.storage.from(bucket).remove(paths);if(e){if(!automatic)alert("파일 삭제 실패\\n"+e.message);return false}}
+  }
+  const {error}=await client.rpc("permanently_delete_trash_item",{item_type:type,item_id:String(id)});
+  if(error){if(!automatic)alert("영구 삭제 실패\\n"+error.message);return false}
+  if(!automatic){alert("영구 삭제되었습니다.");await trashPage()} return true;
+}
 
 // =====================================================
 // 관리자 페이지
@@ -2207,6 +2168,7 @@ async function noticesPage() {
     await client
       .from("notices")
       .select("*")
+      .is("deleted_at", null)
       .order("is_pinned", { ascending: false })
       .order("created_at", { ascending: false });
 
@@ -2524,6 +2486,7 @@ async function noticeDetail(noticeId) {
       .from("notices")
       .select("*")
       .eq("id", noticeId)
+      .is("deleted_at", null)
       .single();
 
   if (error || !notice) {
@@ -2803,42 +2766,13 @@ async function updateNotice(noticeId) {
 // =====================================================
 
 async function deleteNotice(noticeId) {
-  const profile = await getCurrentProfile();
-
-  if (!canManageNotices(profile)) {
-    alert("공지 삭제 권한이 없습니다.");
-    return;
-  }
-
-  const confirmed =
-    confirm(
-      "이 공지사항을 삭제하시겠습니까?\n\n" +
-      "삭제 후 복구할 수 없습니다."
-    );
-
-  if (!confirmed) {
-    return;
-  }
-
-  const { error } =
-    await client
-      .from("notices")
-      .delete()
-      .eq("id", noticeId);
-
-  if (error) {
-    alert(
-      "공지 삭제 실패:\n" +
-      error.message
-    );
-    return;
-  }
-
-  alert("공지사항이 삭제되었습니다.");
-
+  if (!confirm("이 공지사항을 휴지통으로 이동하시겠습니까?\n30일 동안 복원할 수 있습니다.")) return;
+  const { error } = await client.rpc("move_item_to_trash", { item_type: "notice", item_id: String(noticeId) });
+  if (error) return alert("휴지통 이동에 실패했습니다.\n" + error.message);
+  document.getElementById("noticePopup")?.remove();
+  alert("공지사항을 휴지통으로 이동했습니다.");
   await noticesPage();
 }
-
 
 const INSURANCE_CONTACTS = [
   {
@@ -3533,6 +3467,7 @@ async function resourcesPage() {
   const { data: resources, error } = await client
     .from("resources")
     .select("*, resource_files(id)")
+    .is("deleted_at", null)
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -3698,7 +3633,7 @@ async function resourceDetail(resourceId) {
   if (!user || !profile || profile.status !== "approved") return authScreen();
 
   const [{ data: resource, error }, { data: files, error: filesError }] = await Promise.all([
-    client.from("resources").select("*").eq("id", resourceId).single(),
+    client.from("resources").select("*").eq("id", resourceId).is("deleted_at", null).single(),
     client.from("resource_files").select("*").eq("resource_id", resourceId).order("created_at", { ascending: true })
   ]);
   if (error || !resource) return alert("자료를 불러오지 못했습니다.");
@@ -3778,18 +3713,9 @@ async function updateResource(resourceId) {
 }
 
 async function deleteResource(resourceId) {
-  const profile = await getCurrentProfile();
-  if (!profile || profile.role !== "admin") return alert("관리자만 자료를 삭제할 수 있습니다.");
-  if (!confirm("이 자료와 첨부 파일을 모두 삭제하시겠습니까?\n삭제 후 복구할 수 없습니다.")) return;
-  const { data: files, error: loadError } = await client.from("resource_files").select("file_path").eq("resource_id", resourceId);
-  if (loadError) return alert("파일 목록을 확인하지 못했습니다.\n" + loadError.message);
-  const paths = (files || []).map(file => file.file_path).filter(Boolean);
-  if (paths.length) {
-    const { error } = await client.storage.from("resources").remove(paths);
-    if (error) return alert("첨부 파일 삭제에 실패했습니다.\n" + error.message);
-  }
-  const { error } = await client.from("resources").delete().eq("id", resourceId);
-  if (error) return alert("자료 삭제에 실패했습니다.\n" + error.message);
-  alert("자료가 삭제되었습니다.");
+  if (!confirm("이 자료를 휴지통으로 이동하시겠습니까?\n첨부 파일은 보존되며 30일 동안 복원할 수 있습니다.")) return;
+  const { error } = await client.rpc("move_item_to_trash", { item_type: "resource", item_id: String(resourceId) });
+  if (error) return alert("휴지통 이동에 실패했습니다.\n" + error.message);
+  alert("자료를 휴지통으로 이동했습니다.");
   await resourcesPage();
 }
