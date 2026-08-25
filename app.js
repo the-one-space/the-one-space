@@ -591,7 +591,7 @@ async function home(profile) {
           <button class="active" onclick="goHome()"><span>⌂</span> 메인화면</button>
           <button onclick="recordingsPage()"><span>◉</span> 녹취록 관리</button>
           <button onclick="resourcesPage()"><span>▰</span> 자료실</button>
-          <button onclick="noticesPage()"><span>◀</span> 공지사항</button>\n          <button onclick="contactsPage()"><span>♙</span> 지점원 연락처</button>
+          <button onclick="noticesPage()"><span>◀</span> 공지사항</button>\n          <button onclick="contactsPage()"><span>♙</span> 지점원 연락처</button>\n          <button onclick="insuranceContactsPage()"><span>☎</span> 보험사 연락처</button>
           <button onclick="window.open('${scheduleUrl}', '_blank')"><span>▣</span> 일정</button>\n          <button onclick="installApp()"><span>⇩</span> 앱 설치</button>
         </nav>
         ${adminMenu}
@@ -657,7 +657,7 @@ async function home(profile) {
               <div class="quick-grid">
                 <button onclick="newRecordingForm()"><span>🎙</span>녹취록 등록</button>
                 <button onclick="newResourceForm()"><span>▰</span>자료실 업로드</button>
-                <button onclick="noticesPage()"><span>📢</span>공지사항</button>\n                <button onclick="contactsPage()"><span>☎</span>지점원 연락처</button>
+                <button onclick="noticesPage()"><span>📢</span>공지사항</button>\n                <button onclick="contactsPage()"><span>☎</span>지점원 연락처</button>\n                <button onclick="insuranceContactsPage()"><span>☏</span>보험사 연락처</button>
                 <button onclick="window.open('${scheduleUrl}', '_blank')"><span>▣</span>일정 확인</button>
                 <button onclick="recordingsPage()"><span>⌕</span>녹취록 찾기</button>
                 ${profile.role === "admin"
@@ -2625,6 +2625,342 @@ async function deleteNotice(noticeId) {
   await noticesPage();
 }
 
+
+const INSURANCE_CONTACTS = [
+  {
+    "type": "생명보험",
+    "name": "삼성생명",
+    "claimFax": "고객센터 요청",
+    "consentFax": "1599-9555",
+    "monitoring": "1588-3115",
+    "callCenter": "1588-3114"
+  },
+  {
+    "type": "생명보험",
+    "name": "한화생명",
+    "claimFax": "고객센터 요청",
+    "consentFax": "0503-7315-6363",
+    "monitoring": "1800-6633",
+    "callCenter": "1588-6363"
+  },
+  {
+    "type": "생명보험",
+    "name": "교보생명",
+    "claimFax": "고객센터 요청",
+    "consentFax": "0502-303-5455",
+    "monitoring": "1588-1636",
+    "callCenter": "1588-1001"
+  },
+  {
+    "type": "생명보험",
+    "name": "신한라이프",
+    "claimFax": "고객센터 요청",
+    "consentFax": "02-2200-2999",
+    "monitoring": "1522-2285",
+    "callCenter": "1588-5580"
+  },
+  {
+    "type": "생명보험",
+    "name": "NH농협생명",
+    "claimFax": "02-6971-6040",
+    "consentFax": "전산등록만 가능",
+    "monitoring": "1544-4422",
+    "callCenter": "1544-4000"
+  },
+  {
+    "type": "생명보험",
+    "name": "메트라이프",
+    "claimFax": "고객센터 요청",
+    "consentFax": "0502-370-0201",
+    "monitoring": "1588-9609",
+    "callCenter": "1588-9600"
+  },
+  {
+    "type": "생명보험",
+    "name": "DB생명",
+    "claimFax": "0505-129-3134",
+    "consentFax": "0505-129-4643",
+    "monitoring": "02-6470-7663",
+    "callCenter": "1588-3131"
+  },
+  {
+    "type": "생명보험",
+    "name": "동양생명",
+    "claimFax": "02-3289-4517",
+    "consentFax": "02-3289-4500",
+    "monitoring": "080-899-1004",
+    "callCenter": "1577-1004"
+  },
+  {
+    "type": "생명보험",
+    "name": "흥국생명",
+    "claimFax": "고객센터 요청",
+    "consentFax": "0508-101-9000",
+    "monitoring": "1877-7006",
+    "callCenter": "1588-2288"
+  },
+  {
+    "type": "생명보험",
+    "name": "처브라이프",
+    "claimFax": "02-3480-7801",
+    "consentFax": "02-3480-7813",
+    "monitoring": "1599-4600",
+    "callCenter": "1599-4600"
+  },
+  {
+    "type": "생명보험",
+    "name": "미래에셋생명",
+    "claimFax": "고객센터 요청",
+    "consentFax": "02-6210-7914",
+    "monitoring": "1588-0220",
+    "callCenter": "1588-0220"
+  },
+  {
+    "type": "생명보험",
+    "name": "하나생명",
+    "claimFax": "고객센터 요청",
+    "consentFax": "02-3709-8601",
+    "monitoring": "1577-1112",
+    "callCenter": "1577-1112"
+  },
+  {
+    "type": "생명보험",
+    "name": "ABL생명",
+    "claimFax": "02-3299-5544",
+    "consentFax": "전산등록만 가능",
+    "monitoring": "1566-1002",
+    "callCenter": "1588-6500"
+  },
+  {
+    "type": "생명보험",
+    "name": "KB라이프",
+    "claimFax": "고객센터 요청",
+    "consentFax": "전산등록만 가능",
+    "monitoring": "1566-2730",
+    "callCenter": "1588-3374"
+  },
+  {
+    "type": "생명보험",
+    "name": "AIA생명",
+    "claimFax": "02-2021-4540",
+    "consentFax": "02-2021-4527",
+    "monitoring": "1588-2513",
+    "callCenter": "1588-9898"
+  },
+  {
+    "type": "생명보험",
+    "name": "KDB생명",
+    "claimFax": "고객센터 요청",
+    "consentFax": "02-2669-7999",
+    "monitoring": "1588-4040",
+    "callCenter": "1588-4040"
+  },
+  {
+    "type": "생명보험",
+    "name": "iM라이프",
+    "claimFax": "0505-083-5420",
+    "consentFax": "0503-047-7000",
+    "monitoring": "1588-4770",
+    "callCenter": "1588-4770"
+  },
+  {
+    "type": "생명보험",
+    "name": "라이나생명",
+    "claimFax": "02-6944-1200",
+    "consentFax": "02-6944-1224",
+    "monitoring": "1588-2442",
+    "callCenter": "1588-0058"
+  },
+  {
+    "type": "손해보험",
+    "name": "삼성화재",
+    "claimFax": "0505-162-0872",
+    "consentFax": "0505-166-1003",
+    "monitoring": "1566-0553",
+    "callCenter": "1588-5114"
+  },
+  {
+    "type": "손해보험",
+    "name": "현대해상",
+    "claimFax": "0507-774-6060",
+    "consentFax": "0507-774-6411",
+    "monitoring": "1577-3223",
+    "callCenter": "1588-5656"
+  },
+  {
+    "type": "손해보험",
+    "name": "KB손해보험",
+    "claimFax": "0505-136-6500",
+    "consentFax": "0505-136-4948",
+    "monitoring": "1544-0019",
+    "callCenter": "1544-0114"
+  },
+  {
+    "type": "손해보험",
+    "name": "DB손해보험",
+    "claimFax": "0505-181-4862",
+    "consentFax": "0505-180-7028",
+    "monitoring": "1566-0757",
+    "callCenter": "1588-0100"
+  },
+  {
+    "type": "손해보험",
+    "name": "메리츠화재",
+    "claimFax": "0505-021-3400",
+    "consentFax": "0505-048-1000",
+    "monitoring": "1577-7711",
+    "callCenter": "1566-7711"
+  },
+  {
+    "type": "손해보험",
+    "name": "한화손해보험",
+    "claimFax": "0502-779-1004",
+    "consentFax": "0502-605-1502",
+    "monitoring": "1670-1882",
+    "callCenter": "1566-8000"
+  },
+  {
+    "type": "손해보험",
+    "name": "롯데손해보험",
+    "claimFax": "0507-333-9999",
+    "consentFax": "0507-333-0507",
+    "monitoring": "1600-5182",
+    "callCenter": "1588-3344"
+  },
+  {
+    "type": "손해보험",
+    "name": "흥국화재",
+    "claimFax": "0504-800-0700",
+    "consentFax": "0504-800-0043",
+    "monitoring": "1688-6997",
+    "callCenter": "1688-1688"
+  },
+  {
+    "type": "손해보험",
+    "name": "NH농협손해보험",
+    "claimFax": "0505-060-7000",
+    "consentFax": "0505-060-5008",
+    "monitoring": "1644-9600",
+    "callCenter": "1644-9000"
+  },
+  {
+    "type": "손해보험",
+    "name": "하나손해보험",
+    "claimFax": "0505-170-0765",
+    "consentFax": "02-6355-2500",
+    "monitoring": "02-6299-6821",
+    "callCenter": "1566-3000"
+  },
+  {
+    "type": "손해보험",
+    "name": "AIG손해보험",
+    "claimFax": "02-2011-4607",
+    "consentFax": "1566-1881",
+    "monitoring": "1600-4600",
+    "callCenter": "1544-2792"
+  }
+];
+
+async function insuranceContactsPage() {
+  const profile = await getCurrentProfile();
+  if (!profile || profile.status !== "approved") {
+    authScreen();
+    return;
+  }
+
+  const cards = INSURANCE_CONTACTS.map((item, index) => `
+    <article class="card insurer-card insurer-search-item"
+      data-type="${item.type}"
+      data-search="${escapeHtml([item.name,item.claimFax,item.consentFax,item.monitoring,item.callCenter].join(" ").toLowerCase())}">
+      <div class="insurer-card-head">
+        <span class="insurer-type">${item.type}</span>
+        <h3>${escapeHtml(item.name)}</h3>
+      </div>
+      <div class="insurer-contact-list">
+        ${insuranceContactRow("대표 콜센터", item.callCenter, true)}
+        ${insuranceContactRow("인콜 모니터링", item.monitoring, true)}
+        ${insuranceContactRow("보험금청구 Fax", item.claimFax, false)}
+        ${insuranceContactRow("설계동의 Fax", item.consentFax, false)}
+      </div>
+    </article>`).join("");
+
+  app.innerHTML = `
+    <div class="wrap">
+      <div class="top">
+        <div class="brand" onclick="goHome()" role="button" tabindex="0" title="메인으로" style="cursor:pointer;">
+          THE ONE <b>SPACE</b>
+        </div>
+        <button class="btn secondary" onclick="goHome()">메인으로</button>
+      </div>
+      <section class="hero">
+        <div class="muted">INSURANCE DIRECTORY</div>
+        <h1>보험사별 연락처</h1>
+        <p>생명보험·손해보험 콜센터와 업무별 번호를 확인합니다.</p>
+      </section>
+      <div class="toolbar insurer-toolbar">
+        <input id="insurerSearch" type="search" placeholder="보험사 또는 번호 검색" oninput="filterInsuranceContacts()">
+        <div class="resource-category-tabs">
+          <button class="resource-category-btn active" data-type="" onclick="selectInsuranceType('',this)">전체</button>
+          <button class="resource-category-btn" data-type="생명보험" onclick="selectInsuranceType('생명보험',this)">생명보험</button>
+          <button class="resource-category-btn" data-type="손해보험" onclick="selectInsuranceType('손해보험',this)">손해보험</button>
+        </div>
+      </div>
+      <div class="insurer-grid">${cards}</div>
+      <p id="insurerEmpty" class="card contact-empty" hidden>검색 결과가 없습니다.</p>
+      <p class="directory-source">※ 제공된 「생보,손보 콜센터」 자료 기준 · 2026.04</p>
+    </div>`;
+}
+
+function insuranceContactRow(label, value, callable) {
+  const isNumber = /^[0-9-]+$/.test(String(value));
+  const action = callable && isNumber
+    ? `<button class="insurer-call-btn" onclick="callInsuranceNumber('${value}')">전화</button>`
+    : isNumber
+      ? `<button class="insurer-copy-btn" onclick="copyInsuranceNumber('${value}',this)">복사</button>`
+      : "";
+  return `
+    <div class="insurer-contact-row">
+      <span>${label}</span>
+      <b>${escapeHtml(value)}</b>
+      ${action}
+    </div>`;
+}
+
+function selectInsuranceType(type, button) {
+  document.querySelectorAll(".insurer-toolbar .resource-category-btn").forEach(item => {
+    item.classList.toggle("active", item === button);
+  });
+  filterInsuranceContacts();
+}
+
+function filterInsuranceContacts() {
+  const query = document.getElementById("insurerSearch").value.trim().toLowerCase();
+  const active = document.querySelector(".insurer-toolbar .resource-category-btn.active");
+  const type = active ? active.dataset.type : "";
+  const items = Array.from(document.querySelectorAll(".insurer-search-item"));
+  let visible = 0;
+  items.forEach(item => {
+    const show = (!query || item.dataset.search.includes(query)) && (!type || item.dataset.type === type);
+    item.style.display = show ? "" : "none";
+    if (show) visible += 1;
+  });
+  document.getElementById("insurerEmpty").hidden = visible > 0;
+}
+
+function callInsuranceNumber(number) {
+  window.location.href = "tel:" + String(number).replace(/[^\d+]/g, "");
+}
+
+async function copyInsuranceNumber(number, button) {
+  try {
+    await navigator.clipboard.writeText(number);
+    const original = button.textContent;
+    button.textContent = "복사됨";
+    setTimeout(() => button.textContent = original, 1200);
+  } catch {
+    prompt("번호를 복사해 주세요.", number);
+  }
+}
 
 let contactDirectoryCache = [];
 
