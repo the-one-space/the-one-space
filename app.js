@@ -266,8 +266,9 @@ function signupForm() {
       </div>
 
       <div class="field">
-        <label>생일</label>
-        <input id="birthday" type="date">
+        <label>생년월일</label>
+        <input id="birthday" type="text" inputmode="numeric" maxlength="8"
+          placeholder="예: 19920319" autocomplete="bday">
       </div>
 
       <div class="field">
@@ -367,16 +368,37 @@ async function signup() {
   const phoneValue =
     document.getElementById("phone").value.trim();
 
-  const birthdayValue =
-    document.getElementById("birthday").value;
+  const birthdayDigits =
+    document.getElementById("birthday").value.replace(/\D/g, "");
+
+  let birthdayValue = "";
+  if (/^\d{8}$/.test(birthdayDigits)) {
+    const year = Number(birthdayDigits.slice(0, 4));
+    const month = Number(birthdayDigits.slice(4, 6));
+    const day = Number(birthdayDigits.slice(6, 8));
+    const parsed = new Date(year, month - 1, day);
+    if (
+      parsed.getFullYear() === year &&
+      parsed.getMonth() === month - 1 &&
+      parsed.getDate() === day
+    ) {
+      birthdayValue =
+        birthdayDigits.slice(0, 4) + "-" +
+        birthdayDigits.slice(4, 6) + "-" +
+        birthdayDigits.slice(6, 8);
+    }
+  }
 
   const positionValue =
     document.getElementById("position").value;
 
-  if (!nameValue || !emailValue || !pwValue || !phoneValue || !birthdayValue) {
-    setMsg(
-      "이름, 이메일, 비밀번호, 전화번호, 생일을 모두 입력해 주세요."
-    );
+  if (!nameValue || !emailValue || !pwValue || !phoneValue) {
+    setMsg("이름, 이메일, 비밀번호, 전화번호를 모두 입력해 주세요.");
+    return;
+  }
+
+  if (!birthdayValue) {
+    setMsg("생년월일 8자리를 정확히 입력해 주세요. 예: 19920319");
     return;
   }
 
