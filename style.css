@@ -212,3 +212,12 @@ body:has(> #app > .wrap),body:has(> #app > .auth){background:#f4f7fb;color:#142b
   .insurer-grid{grid-template-columns:1fr}.insurer-contact-row{grid-template-columns:105px 1fr auto}.insurer-card-head{padding:16px}
   .insurer-contact-list{padding:5px 14px 12px}.insurer-contact-row>b{font-size:13px}
 }
+
+
+.insurer-manager-card .manager-contact-row{grid-template-columns:92px minmax(80px,1fr) auto;align-items:center}
+.manager-contact-row small{grid-column:2/-1;color:#8a939e;font-size:12px}
+.manager-call-link{text-decoration:none;white-space:nowrap}
+@media(max-width:640px){
+  .insurer-manager-card .manager-contact-row{grid-template-columns:78px 1fr}
+  .insurer-manager-card .manager-contact-row .manager-call-link{grid-column:1/-1;text-align:center;margin-top:4px}
+}
