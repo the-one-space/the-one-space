@@ -2949,12 +2949,14 @@ async function resourcesPage() {
         <p>지점 업무에 필요한 파일을 찾고 공유합니다.</p>
         <button class="btn" onclick="newResourceForm()">+ 새 자료 등록</button>
       </section>
-      <div class="toolbar">
+      <div class="toolbar resource-toolbar">
         <input id="resourceSearch" type="search" placeholder="제목, 설명, 태그, 등록자 검색" oninput="filterResources()">
-        <select id="resourceCategoryFilter" onchange="filterResources()">
-          <option value="">전체 카테고리</option>
-          ${RESOURCE_CATEGORIES.map(category => `<option value="${category}">${category}</option>`).join("")}
-        </select>
+        <div class="resource-category-tabs" aria-label="자료 카테고리">
+          <button class="resource-category-btn active" data-category="" onclick="selectResourceCategory('', this)">전체</button>
+          ${RESOURCE_CATEGORIES.map(category =>
+            `<button class="resource-category-btn" data-category="${category}" onclick="selectResourceCategory('${category}', this)">${category}</button>`
+          ).join("")}
+        </div>
       </div>
       <div id="resourceEmpty" class="card" style="display:${resources?.length ? "none" : "block"};">
         <p class="muted">등록된 자료가 없습니다.</p>
@@ -2963,9 +2965,17 @@ async function resourcesPage() {
     </div>`;
 }
 
+function selectResourceCategory(category, button) {
+  document.querySelectorAll(".resource-category-btn").forEach(item => {
+    item.classList.toggle("active", item === button);
+  });
+  filterResources();
+}
+
 function filterResources() {
   const query = document.getElementById("resourceSearch").value.trim().toLowerCase();
-  const category = document.getElementById("resourceCategoryFilter").value;
+  const activeCategory = document.querySelector(".resource-category-btn.active");
+  const category = activeCategory ? activeCategory.dataset.category : "";
   const cards = Array.from(document.querySelectorAll(".resource-card"));
   let visible = 0;
   cards.forEach(card => {
