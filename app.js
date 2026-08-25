@@ -513,7 +513,7 @@ async function updatePassword() {
 
 async function home(profile) {
   const scheduleUrl =
-    "https://docs.google.com/spreadsheets/d/1h_mwY9v-YdpEknbme16u1-kvY618_QJN/edit?gid=1579963286#gid=1579963286";
+    "https://docs.google.com/spreadsheets/d/1h_mwY9v-YdpEknbme16u1-kvY618_QJN/edit?pli=1&gid=1296088469#gid=1296088469";
 
   const [
     { count: recordingCount },
