@@ -591,7 +591,7 @@ async function home(profile) {
           <button class="active" onclick="goHome()"><span>⌂</span> 메인화면</button>
           <button onclick="recordingsPage()"><span>◉</span> 녹취록 관리</button>
           <button onclick="resourcesPage()"><span>▰</span> 자료실</button>
-          <button onclick="noticesPage()"><span>◀</span> 공지사항</button>\n          <button onclick="contactsPage()"><span>♙</span> 지점원 연락처</button>\n          <button onclick="insuranceContactsPage()"><span>☎</span> 보험사 연락처</button>
+          <button onclick="noticesPage()"><span>◀</span> 공지사항</button>\n          <button onclick="contactsPage()"><span>♙</span> 지점원 연락처</button>\n          <button onclick="insuranceContactsPage()"><span>☎</span> 보험사 연락처</button>\n          <button onclick="insuranceManagersPage()"><span>♧</span> 보험사 담당자</button>
           <button onclick="window.open('${scheduleUrl}', '_blank')"><span>▣</span> 일정</button>\n          <button onclick="installApp()"><span>⇩</span> 앱 설치</button>
         </nav>
         ${adminMenu}
@@ -657,7 +657,7 @@ async function home(profile) {
               <div class="quick-grid">
                 <button onclick="newRecordingForm()"><span>🎙</span>녹취록 등록</button>
                 <button onclick="newResourceForm()"><span>▰</span>자료실 업로드</button>
-                <button onclick="noticesPage()"><span>📢</span>공지사항</button>\n                <button onclick="contactsPage()"><span>☎</span>지점원 연락처</button>\n                <button onclick="insuranceContactsPage()"><span>☏</span>보험사 연락처</button>
+                <button onclick="noticesPage()"><span>📢</span>공지사항</button>\n                <button onclick="contactsPage()"><span>☎</span>지점원 연락처</button>\n                <button onclick="insuranceContactsPage()"><span>☏</span>보험사 연락처</button>\n                <button onclick="insuranceManagersPage()"><span>♧</span>보험사 담당자</button>
                 <button onclick="window.open('${scheduleUrl}', '_blank')"><span>▣</span>일정 확인</button>
                 <button onclick="recordingsPage()"><span>⌕</span>녹취록 찾기</button>
                 ${profile.role === "admin"
@@ -2860,6 +2860,104 @@ const INSURANCE_CONTACTS = [
     "callCenter": "1544-2792"
   }
 ];
+
+
+async function insuranceManagersPage() {
+  const profile = await getCurrentProfile();
+  if (!profile || profile.status !== "approved") { authScreen(); return; }
+
+  const { data, error } = await client
+    .from("insurance_manager_contacts")
+    .select("insurance_type, insurer_name, contact_role, person_name, phone, note, sort_order")
+    .order("sort_order", { ascending: true });
+
+  if (error) {
+    alert("보험사 담당자 연락처를 불러오지 못했습니다.\n" + error.message);
+    return;
+  }
+
+  const grouped = [];
+  (data || []).forEach(row => {
+    let group = grouped.find(item =>
+      item.type === row.insurance_type && item.name === row.insurer_name
+    );
+    if (!group) {
+      group = { type: row.insurance_type, name: row.insurer_name, contacts: [] };
+      grouped.push(group);
+    }
+    group.contacts.push(row);
+  });
+
+  const cards = grouped.map(item => {
+    const searchText = [item.type, item.name]
+      .concat(item.contacts.flatMap(row => [row.contact_role, row.person_name, row.phone || "", row.note || ""]))
+      .join(" ").toLowerCase();
+    const rows = item.contacts.map(row => `
+      <div class="insurer-contact-row manager-contact-row">
+        <span>${escapeHtml(row.contact_role)}</span>
+        <b>${escapeHtml(row.person_name)}</b>
+        ${row.phone ? `<a class="insurer-call-btn manager-call-link" href="tel:${row.phone.replace(/[^\\d+]/g, "")}">${escapeHtml(row.phone)} · 전화</a>` : ""}
+        ${row.note ? `<small>${escapeHtml(row.note)}</small>` : ""}
+      </div>`
+    ).join("");
+    return `
+      <article class="card insurer-card insurer-manager-card insurer-manager-search-item"
+        data-type="${item.type}" data-search="${escapeHtml(searchText)}">
+        <div class="insurer-card-head">
+          <span class="insurer-type">${item.type}</span>
+          <h3>${escapeHtml(item.name)}</h3>
+        </div>
+        <div class="insurer-contact-list">${rows}</div>
+      </article>`;
+  }).join("");
+
+  app.innerHTML = `
+    <div class="wrap">
+      <div class="top">
+        <div class="brand" onclick="goHome()" role="button" tabindex="0" title="메인으로" style="cursor:pointer;">THE ONE <b>SPACE</b></div>
+        <button class="btn secondary" onclick="goHome()">메인으로</button>
+      </div>
+      <section class="hero">
+        <div class="muted">INSURANCE MANAGERS</div>
+        <h1>보험사 담당자 연락처</h1>
+        <p>보험사별 지점장·교육매니저·설계매니저에게 바로 전화할 수 있습니다.</p>
+      </section>
+      <div class="toolbar insurer-toolbar manager-toolbar">
+        <input id="managerSearch" type="search" placeholder="보험사, 담당자, 전화번호 검색" oninput="filterInsuranceManagers()">
+        <div class="resource-category-tabs">
+          <button class="resource-category-btn active" data-type="" onclick="selectInsuranceManagerType('',this)">전체</button>
+          <button class="resource-category-btn" data-type="생명보험" onclick="selectInsuranceManagerType('생명보험',this)">생명보험</button>
+          <button class="resource-category-btn" data-type="손해보험" onclick="selectInsuranceManagerType('손해보험',this)">손해보험</button>
+        </div>
+      </div>
+      <div class="insurer-grid">${cards || '<p class="card contact-empty">등록된 담당자 연락처가 없습니다.</p>'}</div>
+      <p id="managerEmpty" class="card contact-empty" hidden>검색 결과가 없습니다.</p>
+      <p class="directory-source">※ 로그인 승인된 지점 직원만 열람 가능 · 2026.08.21 기준</p>
+    </div>`;
+}
+
+function selectInsuranceManagerType(type, button) {
+  document.querySelectorAll(".manager-toolbar .resource-category-btn").forEach(item => {
+    item.classList.toggle("active", item === button);
+  });
+  filterInsuranceManagers();
+}
+
+function filterInsuranceManagers() {
+  const search = document.getElementById("managerSearch");
+  const query = search ? search.value.trim().toLowerCase() : "";
+  const active = document.querySelector(".manager-toolbar .resource-category-btn.active");
+  const type = active ? active.dataset.type : "";
+  const items = Array.from(document.querySelectorAll(".insurer-manager-search-item"));
+  let visible = 0;
+  items.forEach(item => {
+    const show = (!query || item.dataset.search.includes(query)) && (!type || item.dataset.type === type);
+    item.style.display = show ? "" : "none";
+    if (show) visible += 1;
+  });
+  const empty = document.getElementById("managerEmpty");
+  if (empty) empty.hidden = visible > 0;
+}
 
 async function insuranceContactsPage() {
   const profile = await getCurrentProfile();
