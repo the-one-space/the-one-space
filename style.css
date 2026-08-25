@@ -197,3 +197,18 @@ body:has(> #app > .wrap),body:has(> #app > .auth){background:#f4f7fb;color:#142b
 .resource-category-btn:hover{border-color:#e77b98;color:#b8103c}
 .resource-category-btn.active{border-color:#d71950;background:linear-gradient(135deg,#e21b50,#c90d3e);color:#fff;box-shadow:0 5px 13px rgba(201,13,62,.2)}
 @media(max-width:520px){.resource-category-tabs{margin:0 -2px}.resource-category-btn{padding:9px 14px}}
+
+/* Insurance contact directory */
+.insurer-toolbar{display:block}.insurer-toolbar>input{width:100%;margin-bottom:12px}
+.insurer-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:13px}
+.insurer-card{padding:0!important;overflow:hidden}.insurer-card-head{padding:18px 20px 14px;border-bottom:1px solid #edf0f4;display:flex;align-items:center;gap:10px}
+.insurer-card-head h3{margin:0!important;font-size:19px!important}.insurer-type{padding:4px 8px;border-radius:999px;background:#e8f2fd;color:#155d97;font-size:11px;font-weight:800}
+.insurer-contact-list{padding:6px 18px 13px}.insurer-contact-row{min-height:49px;display:grid;grid-template-columns:115px 1fr auto;align-items:center;gap:9px;border-bottom:1px solid #f0f2f5}
+.insurer-contact-row:last-child{border-bottom:0}.insurer-contact-row>span{color:#71808d;font-size:12px}.insurer-contact-row>b{color:#17354e;font-size:14px}
+.insurer-call-btn,.insurer-copy-btn{border:0;border-radius:9px;padding:7px 10px;font-weight:800;cursor:pointer}
+.insurer-call-btn{background:#d71950;color:#fff}.insurer-copy-btn{background:#e9f1f8;color:#20557f}
+.directory-source{margin:18px 4px;color:#89949e;font-size:11px;text-align:right}
+@media(max-width:520px){
+  .insurer-grid{grid-template-columns:1fr}.insurer-contact-row{grid-template-columns:105px 1fr auto}.insurer-card-head{padding:16px}
+  .insurer-contact-list{padding:5px 14px 12px}.insurer-contact-row>b{font-size:13px}
+}
