@@ -955,14 +955,23 @@ function filterDashboardItems() {
   dashboardSearchTimer = setTimeout(() => runDashboardGlobalSearch(query, sequence), 220);
 }
 
+function normalizeGlobalSearchText(value) {
+  return String(value || "")
+    .normalize("NFKC")
+    .toLowerCase()
+    .replace(/[\s._,()[\]{}\-\/\\]+/g, "");
+}
+
 async function runDashboardGlobalSearch(query, sequence) {
   const results = document.getElementById("dashboardGlobalResults");
   if (!results) return;
 
-  const [recordingsResult, resourcesResult, noticesResult, contactsResult] = await Promise.all([
+  const [recordingsResult, recordingFilesResult, resourcesResult, noticesResult, contactsResult] = await Promise.all([
     client.from("recordings")
-      .select("id,short_title,owner_name,companion_name,consultation_date")
+      .select("id,short_title,details,owner_name,companion_name,consultation_date")
       .is("deleted_at", null),
+    client.from("recording_files")
+      .select("recording_id,file_name"),
     client.from("resources")
       .select("id,title,description,category,uploader_name")
       .is("deleted_at", null),
@@ -975,21 +984,36 @@ async function runDashboardGlobalSearch(query, sequence) {
 
   if (sequence !== dashboardSearchSequence || !document.getElementById("dashboardSearch")) return;
 
+  const normalizedQuery = normalizeGlobalSearchText(query);
   const includesQuery = values =>
-    values.map(value => String(value || "").toLowerCase()).join(" ").includes(query);
+    normalizeGlobalSearchText(values.join(" ")).includes(normalizedQuery);
+
+  const fileNamesByRecording = {};
+  (recordingFilesResult.data || []).forEach(file => {
+    if (!fileNamesByRecording[file.recording_id]) fileNamesByRecording[file.recording_id] = [];
+    fileNamesByRecording[file.recording_id].push(file.file_name || "");
+  });
 
   const recordings = (recordingsResult.data || [])
-    .filter(item => includesQuery([item.short_title, item.owner_name, item.companion_name, item.consultation_date]))
-    .slice(0, 6);
+    .map(item => ({ ...item, file_names: fileNamesByRecording[item.id] || [] }))
+    .filter(item => includesQuery([
+      item.short_title,
+      item.details,
+      item.owner_name,
+      item.companion_name,
+      item.consultation_date,
+      ...item.file_names
+    ]))
+    .slice(0, 8);
   const resources = (resourcesResult.data || [])
     .filter(item => includesQuery([item.title, item.description, item.category, item.uploader_name]))
-    .slice(0, 6);
+    .slice(0, 8);
   const notices = (noticesResult.data || [])
     .filter(item => includesQuery([item.title, item.content]))
-    .slice(0, 6);
+    .slice(0, 8);
   const contacts = (contactsResult.data || [])
     .filter(item => includesQuery([item.name, item.position, item.phone, item.memo]))
-    .slice(0, 6);
+    .slice(0, 8);
 
   const section = (title, items, renderItem) => items.length
     ? `<section><h3>${title} <span>${items.length}건</span></h3>${items.map(renderItem).join("")}</section>`
@@ -998,7 +1022,7 @@ async function runDashboardGlobalSearch(query, sequence) {
   const html =
     section("녹취록", recordings, item => `
       <button class="dashboard-global-result-row" onclick="recordingDetail('${item.id}')">
-        <span>🎙</span><div><b>${escapeHtml(item.short_title)}</b>
+        <span>🎙</span><div><b>${escapeHtml(item.short_title || item.file_names[0] || "제목 없음")}</b>
         <small>${escapeHtml(item.owner_name || "")} · ${escapeHtml(item.consultation_date || "")}</small></div>
       </button>`) +
     section("자료실", resources, item => `
@@ -1017,7 +1041,18 @@ async function runDashboardGlobalSearch(query, sequence) {
         <small>${escapeHtml(item.position || "")} · ${escapeHtml(item.phone || "")}</small></div>
       </button>`);
 
-  results.innerHTML = html || '<p class="dashboard-search-no-result">검색 결과가 없습니다.</p>';
+  const hasSearchError = [
+    recordingsResult.error,
+    recordingFilesResult.error,
+    resourcesResult.error,
+    noticesResult.error,
+    contactsResult.error
+  ].some(Boolean);
+
+  results.innerHTML = html ||
+    (hasSearchError
+      ? '<p class="dashboard-search-no-result">검색 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>'
+      : '<p class="dashboard-search-no-result">검색 결과가 없습니다.</p>');
 }
 
 // =====================================================
