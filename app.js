@@ -3063,7 +3063,7 @@ async function insuranceManagersPage() {
 
   const { data, error } = await client
     .from("insurance_manager_contacts")
-    .select("insurance_type, insurer_name, contact_role, person_name, phone, note, sort_order")
+    .select("id, insurance_type, insurer_name, contact_role, person_name, phone, note, sort_order")
     .order("sort_order", { ascending: true });
 
   if (error) {
@@ -3093,6 +3093,11 @@ async function insuranceManagersPage() {
         <b>${escapeHtml(row.person_name)}</b>
         ${row.phone ? `<a class="insurer-call-btn manager-call-link" href="tel:${row.phone.replace(/[^\d+]/g, "")}">${escapeHtml(row.phone)} · 전화</a>` : ""}
         ${row.note ? `<small>${escapeHtml(row.note)}</small>` : ""}
+        ${profile.role === "admin" ? `
+          <div class="button-row manager-admin-actions">
+            <button class="btn secondary" onclick="editInsuranceManager('${row.id}')">수정</button>
+            <button class="btn secondary" onclick="deleteInsuranceManager('${row.id}')">삭제</button>
+          </div>` : ""}
       </div>`
     ).join("");
     return `
@@ -3116,6 +3121,7 @@ async function insuranceManagersPage() {
         <div class="muted">INSURANCE MANAGERS</div>
         <h1>보험사 담당자 연락처</h1>
         <p>보험사별 지점장·교육매니저·설계매니저에게 바로 전화할 수 있습니다.</p>
+        ${profile.role === "admin" ? `<button class="btn" onclick="addInsuranceManager()">+ 담당자 추가</button>` : ""}
       </section>
       <div class="toolbar insurer-toolbar manager-toolbar">
         <input id="managerSearch" type="search" placeholder="보험사, 담당자, 전화번호 검색" oninput="filterInsuranceManagers()">
@@ -3153,6 +3159,87 @@ function filterInsuranceManagers() {
   const empty = document.getElementById("managerEmpty");
   if (empty) empty.hidden = visible > 0;
 }
+
+function askInsuranceManagerFields(current = {}) {
+  const insuranceType = prompt("보험 종류를 입력해 주세요. (생명보험 또는 손해보험)", current.insurance_type || "생명보험");
+  if (insuranceType === null) return null;
+  if (!["생명보험", "손해보험"].includes(insuranceType.trim())) {
+    alert("보험 종류는 생명보험 또는 손해보험으로 입력해 주세요.");
+    return null;
+  }
+  const insurerName = prompt("보험사명을 입력해 주세요.", current.insurer_name || "");
+  if (insurerName === null) return null;
+  const contactRole = prompt("담당 구분을 입력해 주세요. (예: 지점장, 교육매니저, 설계매니저)", current.contact_role || "설계매니저");
+  if (contactRole === null) return null;
+  const personName = prompt("담당자 이름을 입력해 주세요.", current.person_name || "");
+  if (personName === null) return null;
+  const phone = prompt("전화번호를 입력해 주세요.", current.phone || "");
+  if (phone === null) return null;
+  const note = prompt("메모가 있으면 입력해 주세요. (선택)", current.note || "");
+  if (note === null) return null;
+
+  if (!insurerName.trim() || !contactRole.trim() || !personName.trim() || !phone.trim()) {
+    alert("보험사명, 담당 구분, 이름, 전화번호를 모두 입력해 주세요.");
+    return null;
+  }
+
+  return {
+    insurance_type: insuranceType.trim(),
+    insurer_name: insurerName.trim(),
+    contact_role: contactRole.trim(),
+    person_name: personName.trim(),
+    phone: phone.trim(),
+    note: note.trim() || null
+  };
+}
+
+async function addInsuranceManager() {
+  const profile = await getCurrentProfile();
+  if (!profile || profile.role !== "admin") return alert("관리자만 담당자를 추가할 수 있습니다.");
+  const values = askInsuranceManagerFields();
+  if (!values) return;
+  const { error } = await client.from("insurance_manager_contacts").insert({
+    ...values,
+    sort_order: 9999
+  });
+  if (error) return alert("담당자 추가에 실패했습니다.\n" + error.message);
+  alert("보험사 담당자가 추가되었습니다.");
+  await insuranceManagersPage();
+}
+
+async function editInsuranceManager(contactId) {
+  const profile = await getCurrentProfile();
+  if (!profile || profile.role !== "admin") return alert("관리자만 담당자를 수정할 수 있습니다.");
+  const { data: current, error: loadError } = await client
+    .from("insurance_manager_contacts")
+    .select("*")
+    .eq("id", contactId)
+    .single();
+  if (loadError || !current) return alert("담당자 정보를 불러오지 못했습니다.");
+  const values = askInsuranceManagerFields(current);
+  if (!values) return;
+  const { error } = await client
+    .from("insurance_manager_contacts")
+    .update(values)
+    .eq("id", contactId);
+  if (error) return alert("담당자 수정에 실패했습니다.\n" + error.message);
+  alert("보험사 담당자 정보가 수정되었습니다.");
+  await insuranceManagersPage();
+}
+
+async function deleteInsuranceManager(contactId) {
+  const profile = await getCurrentProfile();
+  if (!profile || profile.role !== "admin") return alert("관리자만 담당자를 삭제할 수 있습니다.");
+  if (!confirm("이 보험사 담당자 연락처를 삭제하시겠습니까?")) return;
+  const { error } = await client
+    .from("insurance_manager_contacts")
+    .delete()
+    .eq("id", contactId);
+  if (error) return alert("담당자 삭제에 실패했습니다.\n" + error.message);
+  alert("보험사 담당자 연락처가 삭제되었습니다.");
+  await insuranceManagersPage();
+}
+
 
 async function insuranceContactsPage() {
   const profile = await getCurrentProfile();
