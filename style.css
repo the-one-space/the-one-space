@@ -248,3 +248,53 @@ body:has(> #app > .wrap),body:has(> #app > .auth){background:#f4f7fb;color:#142b
 .trash-empty{grid-column:1/-1;text-align:center;padding:50px 20px}.trash-empty>span{font-size:44px}
 @media(max-width:900px){.trash-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){.trash-grid{grid-template-columns:1fr}.trash-actions .btn{flex:1}}
+
+
+/* 팀별 지점원 목록 */
+.team-count-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 16px 0 20px;
+}
+.team-count-summary span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 12px;
+  border: 1px solid rgba(6, 37, 65, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.78);
+  color: #405269;
+  font-size: 13px;
+}
+.team-count-summary b {
+  color: #d71920;
+}
+.contact-team-section {
+  margin: 34px 0;
+}
+.contact-team-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #e7ebf0;
+}
+.contact-team-heading h2 {
+  margin: 0;
+  color: #062541;
+  font-size: 22px;
+}
+.contact-team-heading span {
+  min-width: 48px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #fff1f2;
+  color: #d71920;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 800;
+}
