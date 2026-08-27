@@ -830,7 +830,8 @@ async function home(profile) {
               <span class="summary-icon">▰</span><p>자료실 자료</p>
               <strong>${resourceCount || 0}<small>건</small></strong><em>업무 자료를 확인해 보세요.</em>
             </article>
-            <article class="summary-card green">
+            <article class="summary-card green" onclick="contactsPage()" role="button" tabindex="0"
+              onkeydown="if(event.key === 'Enter' || event.key === ' '){ event.preventDefault(); contactsPage(); }">
               <span class="summary-icon">♙</span><p>전체 직원 수</p>
               <strong>${employeeCount || 0}<small>명</small></strong><em>승인된 지점원 기준</em>
             </article>
