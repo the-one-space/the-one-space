@@ -1996,6 +1996,11 @@ async function adminPage() {
 
             <p class="muted">🎂 생일: ${p.birthday ? escapeHtml(p.birthday) : "미입력"}</p>
             <button class="btn secondary" onclick="editUserBirthday('${p.id}', '${p.birthday || ""}')">생일 입력·수정</button>
+            ${p.id === profile.id
+              ? `<p class="muted">현재 로그인한 관리자입니다.</p>`
+              : p.role === "admin"
+                ? `<button class="btn secondary" onclick="setUserAdminRole('${p.id}', false, '${escapeHtml(p.name || "직원")}')">관리자 해제</button>`
+                : `<button class="btn" onclick="setUserAdminRole('${p.id}', true, '${escapeHtml(p.name || "직원")}')">관리자로 지정</button>`}
 
           </div>
         `).join("")
@@ -2079,6 +2084,25 @@ async function editUserBirthday(userId, currentBirthday) {
   alert("생일이 저장되었습니다.");
   await adminPage();
 }
+
+async function setUserAdminRole(userId, makeAdmin, userName) {
+  const action = makeAdmin ? "관리자로 지정" : "관리자 권한을 해제";
+  if (!confirm(`${userName}님을 ${action}하시겠습니까?`)) return;
+
+  const { error } = await client.rpc("set_user_admin_role", {
+    target_user_id: userId,
+    make_admin: makeAdmin
+  });
+
+  if (error) {
+    alert("관리자 권한을 변경하지 못했습니다.\n" + error.message);
+    return;
+  }
+
+  alert(makeAdmin ? "관리자로 지정되었습니다." : "관리자 권한이 해제되었습니다.");
+  await adminPage();
+}
+
 
 async function changeUserStatus(
   userId,
