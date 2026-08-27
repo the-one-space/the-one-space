@@ -879,6 +879,10 @@ async function home(profile) {
   if (popupNotice) {
     setTimeout(() => showNoticePopup(popupNotice), 180);
   }
+
+  setTimeout(() => {
+    loadDashboardSearchData().catch(() => {});
+  }, 250);
 }
 
 
@@ -935,25 +939,9 @@ async function openNoticeFromPopup(noticeId) {
 
 let dashboardSearchTimer = null;
 let dashboardSearchSequence = 0;
-
-function filterDashboardItems() {
-  clearTimeout(dashboardSearchTimer);
-  const input = document.getElementById("dashboardSearch");
-  const results = document.getElementById("dashboardGlobalResults");
-  if (!input || !results) return;
-
-  const query = input.value.trim().toLowerCase();
-  if (!query) {
-    results.hidden = true;
-    results.innerHTML = "";
-    return;
-  }
-
-  results.hidden = false;
-  results.innerHTML = '<p class="dashboard-search-loading">검색 중...</p>';
-  const sequence = ++dashboardSearchSequence;
-  dashboardSearchTimer = setTimeout(() => runDashboardGlobalSearch(query, sequence), 220);
-}
+let dashboardSearchCache = null;
+let dashboardSearchCacheLoadedAt = 0;
+let dashboardSearchLoadPromise = null;
 
 function normalizeGlobalSearchText(value) {
   return String(value || "")
@@ -962,58 +950,117 @@ function normalizeGlobalSearchText(value) {
     .replace(/[\s._,()[\]{}\-\/\\]+/g, "");
 }
 
+async function loadDashboardSearchData(force = false) {
+  const cacheIsFresh =
+    dashboardSearchCache &&
+    Date.now() - dashboardSearchCacheLoadedAt < 60000;
+  if (!force && cacheIsFresh) return dashboardSearchCache;
+  if (!force && dashboardSearchLoadPromise) return dashboardSearchLoadPromise;
+
+  dashboardSearchLoadPromise = (async () => {
+    const [recordingsResult, recordingFilesResult, resourcesResult, noticesResult, contactsResult] = await Promise.all([
+      client.from("recordings")
+        .select("id,short_title,details,owner_name,companion_name,consultation_date")
+        .is("deleted_at", null),
+      client.from("recording_files")
+        .select("recording_id,file_name"),
+      client.from("resources")
+        .select("id,title,description,category,uploader_name")
+        .is("deleted_at", null),
+      client.from("notices")
+        .select("id,title,content,is_pinned")
+        .is("deleted_at", null),
+      client.from("contacts")
+        .select("id,name,position,phone,memo")
+    ]);
+
+    const fileNamesByRecording = {};
+    (recordingFilesResult.data || []).forEach(file => {
+      if (!fileNamesByRecording[file.recording_id]) fileNamesByRecording[file.recording_id] = [];
+      fileNamesByRecording[file.recording_id].push(file.file_name || "");
+    });
+
+    dashboardSearchCache = {
+      recordings: (recordingsResult.data || []).map(item => ({
+        ...item,
+        file_names: fileNamesByRecording[item.id] || [],
+        search_text: normalizeGlobalSearchText([
+          item.short_title,
+          item.details,
+          item.owner_name,
+          item.companion_name,
+          item.consultation_date,
+          ...(fileNamesByRecording[item.id] || [])
+        ].join(" "))
+      })),
+      resources: (resourcesResult.data || []).map(item => ({
+        ...item,
+        search_text: normalizeGlobalSearchText([
+          item.title, item.description, item.category, item.uploader_name
+        ].join(" "))
+      })),
+      notices: (noticesResult.data || []).map(item => ({
+        ...item,
+        search_text: normalizeGlobalSearchText([item.title, item.content].join(" "))
+      })),
+      contacts: (contactsResult.data || []).map(item => ({
+        ...item,
+        search_text: normalizeGlobalSearchText([
+          item.name, item.position, item.phone, item.memo
+        ].join(" "))
+      })),
+      hasError: [
+        recordingsResult.error,
+        recordingFilesResult.error,
+        resourcesResult.error,
+        noticesResult.error,
+        contactsResult.error
+      ].some(Boolean)
+    };
+    dashboardSearchCacheLoadedAt = Date.now();
+    return dashboardSearchCache;
+  })();
+
+  try {
+    return await dashboardSearchLoadPromise;
+  } finally {
+    dashboardSearchLoadPromise = null;
+  }
+}
+
+function filterDashboardItems() {
+  clearTimeout(dashboardSearchTimer);
+  const input = document.getElementById("dashboardSearch");
+  const results = document.getElementById("dashboardGlobalResults");
+  if (!input || !results) return;
+
+  const query = input.value.trim();
+  if (!query) {
+    results.hidden = true;
+    results.innerHTML = "";
+    return;
+  }
+
+  results.hidden = false;
+  if (!dashboardSearchCache) {
+    results.innerHTML = '<p class="dashboard-search-loading">검색 준비 중...</p>';
+  }
+  const sequence = ++dashboardSearchSequence;
+  dashboardSearchTimer = setTimeout(() => runDashboardGlobalSearch(query, sequence), 80);
+}
+
 async function runDashboardGlobalSearch(query, sequence) {
   const results = document.getElementById("dashboardGlobalResults");
   if (!results) return;
 
-  const [recordingsResult, recordingFilesResult, resourcesResult, noticesResult, contactsResult] = await Promise.all([
-    client.from("recordings")
-      .select("id,short_title,details,owner_name,companion_name,consultation_date")
-      .is("deleted_at", null),
-    client.from("recording_files")
-      .select("recording_id,file_name"),
-    client.from("resources")
-      .select("id,title,description,category,uploader_name")
-      .is("deleted_at", null),
-    client.from("notices")
-      .select("id,title,content,is_pinned")
-      .is("deleted_at", null),
-    client.from("contacts")
-      .select("id,name,position,phone,memo")
-  ]);
-
+  const data = await loadDashboardSearchData();
   if (sequence !== dashboardSearchSequence || !document.getElementById("dashboardSearch")) return;
 
   const normalizedQuery = normalizeGlobalSearchText(query);
-  const includesQuery = values =>
-    normalizeGlobalSearchText(values.join(" ")).includes(normalizedQuery);
-
-  const fileNamesByRecording = {};
-  (recordingFilesResult.data || []).forEach(file => {
-    if (!fileNamesByRecording[file.recording_id]) fileNamesByRecording[file.recording_id] = [];
-    fileNamesByRecording[file.recording_id].push(file.file_name || "");
-  });
-
-  const recordings = (recordingsResult.data || [])
-    .map(item => ({ ...item, file_names: fileNamesByRecording[item.id] || [] }))
-    .filter(item => includesQuery([
-      item.short_title,
-      item.details,
-      item.owner_name,
-      item.companion_name,
-      item.consultation_date,
-      ...item.file_names
-    ]))
-    .slice(0, 8);
-  const resources = (resourcesResult.data || [])
-    .filter(item => includesQuery([item.title, item.description, item.category, item.uploader_name]))
-    .slice(0, 8);
-  const notices = (noticesResult.data || [])
-    .filter(item => includesQuery([item.title, item.content]))
-    .slice(0, 8);
-  const contacts = (contactsResult.data || [])
-    .filter(item => includesQuery([item.name, item.position, item.phone, item.memo]))
-    .slice(0, 8);
+  const recordings = data.recordings.filter(item => item.search_text.includes(normalizedQuery)).slice(0, 8);
+  const resources = data.resources.filter(item => item.search_text.includes(normalizedQuery)).slice(0, 8);
+  const notices = data.notices.filter(item => item.search_text.includes(normalizedQuery)).slice(0, 8);
+  const contacts = data.contacts.filter(item => item.search_text.includes(normalizedQuery)).slice(0, 8);
 
   const section = (title, items, renderItem) => items.length
     ? `<section><h3>${title} <span>${items.length}건</span></h3>${items.map(renderItem).join("")}</section>`
@@ -1041,16 +1088,8 @@ async function runDashboardGlobalSearch(query, sequence) {
         <small>${escapeHtml(item.position || "")} · ${escapeHtml(item.phone || "")}</small></div>
       </button>`);
 
-  const hasSearchError = [
-    recordingsResult.error,
-    recordingFilesResult.error,
-    resourcesResult.error,
-    noticesResult.error,
-    contactsResult.error
-  ].some(Boolean);
-
   results.innerHTML = html ||
-    (hasSearchError
+    (data.hasError
       ? '<p class="dashboard-search-no-result">검색 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>'
       : '<p class="dashboard-search-no-result">검색 결과가 없습니다.</p>');
 }
