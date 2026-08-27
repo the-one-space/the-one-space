@@ -1948,6 +1948,11 @@ async function adminPage() {
               ${escapeHtml(p.email || "")}
             </p>
 
+            <div class="field">
+              <label for="pendingTeam-${p.id}">소속 팀</label>
+              <select id="pendingTeam-${p.id}">${teamSelectOptions(p.team_no, false)}</select>
+            </div>
+
             <button
               class="btn"
               onclick="changeUserStatus('${p.id}', 'approved')"
@@ -1995,7 +2000,9 @@ async function adminPage() {
               ${escapeHtml(p.email || "")}
             </p>
 
+            <p class="muted">소속 팀: ${teamLabel(p.team_no)}</p>
             <p class="muted">🎂 생일: ${p.birthday ? escapeHtml(p.birthday) : "미입력"}</p>
+            <button class="btn secondary" onclick="editUserTeam('${p.id}', '${escapeHtml(p.name || "직원")}', '${p.team_no || ""}')">소속 팀 변경</button>
             <button class="btn secondary" onclick="editUserBirthday('${p.id}', '${p.birthday || ""}')">생일 입력·수정</button>
             ${p.id === profile.id
               ? `<p class="muted">현재 로그인한 관리자입니다.</p>`
@@ -2069,6 +2076,23 @@ async function adminPage() {
 // =====================================================
 
 
+async function editUserTeam(userId, userName, currentTeam) {
+  const value = prompt(userName + "님의 소속 팀 번호를 입력해 주세요. (1~5)", currentTeam || "");
+  if (value === null) return;
+  const teamNo = Number(value.trim());
+  if (![1, 2, 3, 4, 5].includes(teamNo)) {
+    alert("소속 팀은 1부터 5까지의 숫자로 입력해 주세요.");
+    return;
+  }
+  const { error } = await client.from("profiles").update({ team_no: teamNo }).eq("id", userId);
+  if (error) {
+    alert("소속 팀을 저장하지 못했습니다.\n" + error.message);
+    return;
+  }
+  alert(userName + "님의 소속 팀이 " + teamNo + "팀으로 변경되었습니다.");
+  await adminPage();
+}
+
 async function editUserBirthday(userId, currentBirthday) {
   const value = prompt("생일을 YYYY-MM-DD 형식으로 입력해 주세요.", currentBirthday || "");
   if (value === null) return;
@@ -2122,12 +2146,21 @@ async function changeUserStatus(
     return;
   }
 
+  let updateValues = { status: newStatus };
+  if (newStatus === "approved") {
+    const teamSelect = document.getElementById("pendingTeam-" + userId);
+    const teamNo = Number(teamSelect?.value || 0);
+    if (![1, 2, 3, 4, 5].includes(teamNo)) {
+      alert("승인 전에 소속 팀을 선택해 주세요.");
+      return;
+    }
+    updateValues.team_no = teamNo;
+  }
+
   const { error } =
     await client
       .from("profiles")
-      .update({
-        status: newStatus
-      })
+      .update(updateValues)
       .eq("id", userId);
 
   if (error) {
@@ -3396,6 +3429,21 @@ function contactPositionRank(position) {
   return ranks[position] || 99;
 }
 
+function teamLabel(teamNo) {
+  const value = Number(teamNo);
+  return value >= 1 && value <= 5 ? value + "팀" : "팀 미지정";
+}
+
+function teamSelectOptions(selectedValue, includeUnassigned = true) {
+  const selected = Number(selectedValue || 0);
+  const options = includeUnassigned
+    ? `<option value="">팀 미지정</option>`
+    : `<option value="">소속 팀 선택</option>`;
+  return options + [1, 2, 3, 4, 5]
+    .map(teamNo => `<option value="${teamNo}" ${selected === teamNo ? "selected" : ""}>${teamNo}팀</option>`)
+    .join("");
+}
+
 async function contactsPage() {
   const profile = await getCurrentProfile();
   if (!profile || profile.status !== "approved") {
@@ -3410,30 +3458,52 @@ async function contactsPage() {
   }
 
   contactDirectoryCache = (contacts || []).sort((a, b) =>
+    Number(a.team_no || 0) - Number(b.team_no || 0) ||
     contactPositionRank(a.position) - contactPositionRank(b.position) ||
     String(a.name).localeCompare(String(b.name), "ko")
   );
 
   const canManage = canManageContacts(profile);
-  const cards = contactDirectoryCache.length
-    ? contactDirectoryCache.map(item => `
-        <article class="card contact-card contact-search-item"
-          data-search="${escapeHtml(item.name + " " + item.position + " " + item.phone + " " + (item.memo || ""))}"
-          onclick="showContactActions('${item.id}')">
-          <div class="contact-avatar">${escapeHtml(item.name.slice(0, 1))}</div>
-          <div class="contact-info">
-            <span class="contact-position">${escapeHtml(item.position)}</span>
-            <h3>${escapeHtml(item.name)}</h3>
-            <p class="contact-phone">📞 ${escapeHtml(item.phone)}</p>
-            ${item.memo ? `<p class="contact-memo">${escapeHtml(item.memo)}</p>` : ""}
-          </div>
-          ${canManage ? `
-            <div class="contact-manage">
-              <button class="btn secondary" onclick="event.stopPropagation();editContactForm('${item.id}')">수정</button>
-              <button class="btn secondary" onclick="event.stopPropagation();deleteContact('${item.id}')">삭제</button>
-            </div>` : ""}
-        </article>`).join("")
-    : `<div class="card contact-empty"><p class="muted">등록된 지점원 연락처가 없습니다.</p></div>`;
+  const contactCard = item => `
+    <article class="card contact-card contact-search-item"
+      data-team="${item.team_no || ""}"
+      data-search="${escapeHtml(item.name + " " + item.position + " " + item.phone + " " + (item.memo || ""))}"
+      onclick="showContactActions('${item.id}')">
+      <div class="contact-avatar">${escapeHtml(item.name.slice(0, 1))}</div>
+      <div class="contact-info">
+        <span class="contact-position">${escapeHtml(item.position)}</span>
+        <h3>${escapeHtml(item.name)}</h3>
+        <p class="contact-phone">📞 ${escapeHtml(item.phone)}</p>
+        ${item.memo ? `<p class="contact-memo">${escapeHtml(item.memo)}</p>` : ""}
+      </div>
+      ${canManage ? `
+        <div class="contact-manage">
+          <button class="btn secondary" onclick="event.stopPropagation();editContactForm('${item.id}')">수정</button>
+          <button class="btn secondary" onclick="event.stopPropagation();deleteContact('${item.id}')">삭제</button>
+        </div>` : ""}
+    </article>`;
+
+  const unassigned = contactDirectoryCache.filter(item => !Number(item.team_no));
+  const unassignedHtml = unassigned.length
+    ? `<div class="contact-grid contact-team-section" data-team-section="">${unassigned.map(contactCard).join("")}</div>`
+    : "";
+
+  const teamSections = [1, 2, 3, 4, 5].map(teamNo => {
+    const members = contactDirectoryCache.filter(item => Number(item.team_no) === teamNo);
+    return `
+      <section class="contact-team-section" data-team-section="${teamNo}">
+        <div class="contact-team-heading">
+          <h2>${teamNo}팀</h2>
+          <span>${members.length}명</span>
+        </div>
+        <div class="contact-grid">${members.map(contactCard).join("") || '<p class="card contact-empty">등록된 팀원이 없습니다.</p>'}</div>
+      </section>`;
+  }).join("");
+
+  const teamSummary = [1, 2, 3, 4, 5].map(teamNo => {
+    const count = contactDirectoryCache.filter(item => Number(item.team_no) === teamNo).length;
+    return `<span>${teamNo}팀 <b>${count}명</b></span>`;
+  }).join("");
 
   app.innerHTML = `
     <div class="wrap">
@@ -3448,7 +3518,8 @@ async function contactsPage() {
       <section class="hero">
         <div class="muted">CONTACT DIRECTORY</div>
         <h1>지점원 연락처</h1>
-        <p>지점원 연락처를 검색하고 바로 전화할 수 있습니다.</p>
+        <p>전체 ${contactDirectoryCache.length}명 · 팀별 지점원을 확인하고 바로 전화할 수 있습니다.</p>
+        <div class="team-count-summary">${teamSummary}</div>
         ${canManage ? `<button class="btn" onclick="newContactForm()">+ 연락처 등록</button>` : ""}
       </section>
 
@@ -3457,7 +3528,7 @@ async function contactsPage() {
           oninput="filterContacts()">
       </div>
 
-      <div id="contactGrid" class="contact-grid">${cards}</div>
+      <div id="contactGroups">${unassignedHtml}${teamSections}</div>
       <p id="contactSearchEmpty" class="card contact-empty" hidden>검색 결과가 없습니다.</p>
     </div>`;
 }
@@ -3470,6 +3541,11 @@ function filterContacts() {
     const show = !query || (item.dataset.search || "").toLowerCase().includes(query);
     item.style.display = show ? "" : "none";
     if (show) visible += 1;
+  });
+  document.querySelectorAll(".contact-team-section").forEach(section => {
+    const hasVisibleMember = Array.from(section.querySelectorAll(".contact-search-item"))
+      .some(item => item.style.display !== "none");
+    section.style.display = hasVisibleMember || !query ? "" : "none";
   });
   const empty = document.getElementById("contactSearchEmpty");
   if (empty) empty.hidden = visible > 0;
