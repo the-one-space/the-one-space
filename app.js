@@ -220,6 +220,13 @@ function authScreen() {
         비밀번호 찾기
       </button>
 
+      <button
+        class="btn secondary auth-install-button"
+        onclick="installApp()"
+      >
+        📲 앱 설치
+      </button>
+
       <div id="msg"></div>
 
     </div>
@@ -292,6 +299,13 @@ function signupForm() {
         onclick="authScreen()"
       >
         로그인으로 돌아가기
+      </button>
+
+      <button
+        class="btn secondary auth-install-button"
+        onclick="installApp()"
+      >
+        📲 앱 설치
       </button>
 
       <div id="msg"></div>
