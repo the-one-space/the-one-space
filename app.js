@@ -808,8 +808,9 @@ async function home(profile) {
           </div>
           <label class="dashboard-search">
             <span>⌕</span>
-            <input id="dashboardSearch" type="search" placeholder="메인 화면에서 검색" oninput="filterDashboardItems()">
+            <input id="dashboardSearch" type="search" placeholder="녹취록, 자료, 공지, 지점원 통합 검색" oninput="filterDashboardItems()">
           </label>
+          <div id="dashboardGlobalResults" class="dashboard-global-results" hidden></div>
         </header>
 
         <div class="dashboard-content">
@@ -932,21 +933,92 @@ async function openNoticeFromPopup(noticeId) {
   await noticeDetail(noticeId);
 }
 
+let dashboardSearchTimer = null;
+let dashboardSearchSequence = 0;
+
 function filterDashboardItems() {
+  clearTimeout(dashboardSearchTimer);
   const input = document.getElementById("dashboardSearch");
-  if (!input) return;
+  const results = document.getElementById("dashboardGlobalResults");
+  if (!input || !results) return;
+
   const query = input.value.trim().toLowerCase();
-  const items = Array.from(document.querySelectorAll(".dashboard-search-item"));
-  let visible = 0;
-  items.forEach(item => {
-    const show = !query || (item.dataset.search || "").toLowerCase().includes(query);
-    item.style.display = show ? "" : "none";
-    if (show) visible += 1;
-  });
-  const empty = document.getElementById("dashboardSearchEmpty");
-  if (empty) empty.hidden = !query || visible > 0;
+  if (!query) {
+    results.hidden = true;
+    results.innerHTML = "";
+    return;
+  }
+
+  results.hidden = false;
+  results.innerHTML = '<p class="dashboard-search-loading">검색 중...</p>';
+  const sequence = ++dashboardSearchSequence;
+  dashboardSearchTimer = setTimeout(() => runDashboardGlobalSearch(query, sequence), 220);
 }
 
+async function runDashboardGlobalSearch(query, sequence) {
+  const results = document.getElementById("dashboardGlobalResults");
+  if (!results) return;
+
+  const [recordingsResult, resourcesResult, noticesResult, contactsResult] = await Promise.all([
+    client.from("recordings")
+      .select("id,short_title,owner_name,companion_name,consultation_date")
+      .is("deleted_at", null),
+    client.from("resources")
+      .select("id,title,description,category,uploader_name")
+      .is("deleted_at", null),
+    client.from("notices")
+      .select("id,title,content,is_pinned")
+      .is("deleted_at", null),
+    client.from("contacts")
+      .select("id,name,position,phone,memo")
+  ]);
+
+  if (sequence !== dashboardSearchSequence || !document.getElementById("dashboardSearch")) return;
+
+  const includesQuery = values =>
+    values.map(value => String(value || "").toLowerCase()).join(" ").includes(query);
+
+  const recordings = (recordingsResult.data || [])
+    .filter(item => includesQuery([item.short_title, item.owner_name, item.companion_name, item.consultation_date]))
+    .slice(0, 6);
+  const resources = (resourcesResult.data || [])
+    .filter(item => includesQuery([item.title, item.description, item.category, item.uploader_name]))
+    .slice(0, 6);
+  const notices = (noticesResult.data || [])
+    .filter(item => includesQuery([item.title, item.content]))
+    .slice(0, 6);
+  const contacts = (contactsResult.data || [])
+    .filter(item => includesQuery([item.name, item.position, item.phone, item.memo]))
+    .slice(0, 6);
+
+  const section = (title, items, renderItem) => items.length
+    ? `<section><h3>${title} <span>${items.length}건</span></h3>${items.map(renderItem).join("")}</section>`
+    : "";
+
+  const html =
+    section("녹취록", recordings, item => `
+      <button class="dashboard-global-result-row" onclick="recordingDetail('${item.id}')">
+        <span>🎙</span><div><b>${escapeHtml(item.short_title)}</b>
+        <small>${escapeHtml(item.owner_name || "")} · ${escapeHtml(item.consultation_date || "")}</small></div>
+      </button>`) +
+    section("자료실", resources, item => `
+      <button class="dashboard-global-result-row" onclick="resourceDetail('${item.id}')">
+        <span>▰</span><div><b>${escapeHtml(item.title)}</b>
+        <small>${escapeHtml(item.category || "")} · ${escapeHtml(item.uploader_name || "")}</small></div>
+      </button>`) +
+    section("공지사항", notices, item => `
+      <button class="dashboard-global-result-row" onclick="noticeDetail('${item.id}')">
+        <span>📢</span><div><b>${escapeHtml(item.title)}</b>
+        <small>${escapeHtml(String(item.content || "").slice(0, 55))}</small></div>
+      </button>`) +
+    section("지점원 연락처", contacts, item => `
+      <button class="dashboard-global-result-row" onclick="contactsPage()">
+        <span>☎</span><div><b>${escapeHtml(item.name)}</b>
+        <small>${escapeHtml(item.position || "")} · ${escapeHtml(item.phone || "")}</small></div>
+      </button>`);
+
+  results.innerHTML = html || '<p class="dashboard-search-no-result">검색 결과가 없습니다.</p>';
+}
 
 // =====================================================
 // 녹취록 목록
