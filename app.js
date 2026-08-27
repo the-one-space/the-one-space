@@ -1053,6 +1053,46 @@ async function runDashboardGlobalSearch(query, sequence) {
   const results = document.getElementById("dashboardGlobalResults");
   if (!results) return;
 
+  const { data, error } = await client.rpc("search_the_one", {
+    search_term: query
+  });
+
+  if (error) {
+    await runDashboardLocalSearch(query, sequence);
+    return;
+  }
+  if (sequence !== dashboardSearchSequence || !document.getElementById("dashboardSearch")) return;
+
+  const typeInfo = {
+    recording: { label: "녹취록", icon: "🎙", action: id => `recordingDetail('${id}')` },
+    resource: { label: "자료실", icon: "▰", action: id => `resourceDetail('${id}')` },
+    notice: { label: "공지사항", icon: "📢", action: id => `noticeDetail('${id}')` },
+    contact: { label: "지점원 연락처", icon: "☎", action: () => "contactsPage()" }
+  };
+
+  const rows = data || [];
+  const html = ["recording", "resource", "notice", "contact"].map(type => {
+    const items = rows.filter(item => item.item_type === type);
+    if (!items.length) return "";
+    const info = typeInfo[type];
+    return `<section>
+      <h3>${info.label} <span>${items.length}건</span></h3>
+      ${items.map(item => `
+        <button class="dashboard-global-result-row" onclick="${info.action(item.item_id)}">
+          <span>${info.icon}</span>
+          <div><b>${escapeHtml(item.title || "제목 없음")}</b>
+          <small>${escapeHtml(item.subtitle || "")}</small></div>
+        </button>`).join("")}
+    </section>`;
+  }).join("");
+
+  results.innerHTML = html || '<p class="dashboard-search-no-result">검색 결과가 없습니다.</p>';
+}
+
+async function runDashboardLocalSearch(query, sequence) {
+  const results = document.getElementById("dashboardGlobalResults");
+  if (!results) return;
+
   const data = await loadDashboardSearchData();
   if (sequence !== dashboardSearchSequence || !document.getElementById("dashboardSearch")) return;
 
