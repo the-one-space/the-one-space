@@ -389,9 +389,13 @@ body:has(> #app > .wrap),body:has(> #app > .auth){background:#f4f7fb;color:#142b
   .dashboard-global-results {
     position: fixed;
     top: 76px;
-    right: 12px;
-    left: 12px;
+    right: 10px;
+    left: 10px;
     width: auto;
-    max-height: calc(100vh - 96px);
+    max-height: calc(100dvh - 86px);
+    z-index: 10020;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: auto;
   }
 }
