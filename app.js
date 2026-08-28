@@ -1028,6 +1028,33 @@ async function loadDashboardSearchData(force = false) {
   }
 }
 
+function positionDashboardSearchResults() {
+  const input = document.getElementById("dashboardSearch");
+  const results = document.getElementById("dashboardGlobalResults");
+  if (!input || !results || results.hidden || window.innerWidth > 720) return;
+
+  const viewportHeight = window.visualViewport?.height || window.innerHeight;
+  const inputRect = input.getBoundingClientRect();
+  const top = Math.max(8, Math.min(inputRect.bottom + 7, viewportHeight - 120));
+
+  results.style.top = top + "px";
+  results.style.maxHeight = Math.max(110, viewportHeight - top - 8) + "px";
+}
+
+function resetDashboardSearchResultsPosition() {
+  const results = document.getElementById("dashboardGlobalResults");
+  if (!results) return;
+  results.scrollTop = 0;
+  requestAnimationFrame(positionDashboardSearchResults);
+  setTimeout(positionDashboardSearchResults, 120);
+}
+
+if (window.visualViewport) {
+  window.visualViewport.addEventListener("resize", positionDashboardSearchResults);
+  window.visualViewport.addEventListener("scroll", positionDashboardSearchResults);
+}
+window.addEventListener("orientationchange", () => setTimeout(positionDashboardSearchResults, 150));
+
 function filterDashboardItems() {
   clearTimeout(dashboardSearchTimer);
   const input = document.getElementById("dashboardSearch");
@@ -1042,6 +1069,7 @@ function filterDashboardItems() {
   }
 
   results.hidden = false;
+  resetDashboardSearchResultsPosition();
   if (!dashboardSearchCache) {
     results.innerHTML = '<p class="dashboard-search-loading">검색 준비 중...</p>';
   }
@@ -1087,6 +1115,7 @@ async function runDashboardGlobalSearch(query, sequence) {
   }).join("");
 
   results.innerHTML = html || '<p class="dashboard-search-no-result">검색 결과가 없습니다.</p>';
+  resetDashboardSearchResultsPosition();
 }
 
 async function runDashboardLocalSearch(query, sequence) {
@@ -1132,6 +1161,7 @@ async function runDashboardLocalSearch(query, sequence) {
     (data.hasError
       ? '<p class="dashboard-search-no-result">검색 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>'
       : '<p class="dashboard-search-no-result">검색 결과가 없습니다.</p>');
+  resetDashboardSearchResultsPosition();
 }
 
 // =====================================================
