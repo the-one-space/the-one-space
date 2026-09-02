@@ -1401,7 +1401,9 @@ async function newRecordingForm() {
           >
 
           <p class="muted">
-            여러 파일을 한 번에 선택할 수 있습니다.
+            여러 파일을 한 번에 선택할 수 있습니다.<br>
+            <b>파일 1개당 최대 용량은 50MB입니다.</b><br>
+            파일 용량이 커서 업로드되지 않을 경우 압축한 후 업로드해 주세요.
           </p>
         </div>
 
@@ -1464,6 +1466,19 @@ async function saveRecording() {
 
   if (files.length === 0) {
     setMsg("녹취 파일을 한 개 이상 선택해 주세요.");
+    return;
+  }
+
+  const maxRecordingFileSize = 50 * 1024 * 1024;
+  const oversizedFiles = files.filter(file => file.size > maxRecordingFileSize);
+  if (oversizedFiles.length) {
+    setMsg(
+      "파일 1개당 최대 용량은 50MB입니다.<br>" +
+      oversizedFiles.map(file =>
+        escapeHtml(file.name) + " (" + formatFileSize(file.size) + ")"
+      ).join("<br>") +
+      "<br><br>용량을 압축한 후 다시 업로드해 주세요."
+    );
     return;
   }
 
