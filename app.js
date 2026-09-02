@@ -3420,6 +3420,7 @@ async function insuranceManagersPage() {
         <div class="muted">INSURANCE MANAGERS</div>
         <h1>보험사 담당자 연락처</h1>
         <p>보험사별 지점장·교육매니저·설계매니저에게 바로 전화할 수 있습니다.</p>
+        <p class="muted">※ 변경된 내역 확인되시면 지점비서에게 연락바랍니다.</p>
         ${profile.role === "admin" ? `<button class="btn" onclick="addInsuranceManager()">+ 담당자 추가</button>` : ""}
       </section>
       <div class="toolbar insurer-toolbar manager-toolbar">
