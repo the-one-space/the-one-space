@@ -1302,9 +1302,6 @@ async function newRecordingForm() {
     return;
   }
 
-  const today =
-    new Date().toISOString().slice(0, 10);
-
   app.innerHTML = `
     <div class="wrap">
 
@@ -1346,7 +1343,7 @@ async function newRecordingForm() {
             type="text"
             inputmode="numeric"
             maxlength="8"
-            value="${today.replaceAll("-", "")}"
+            value=""
             placeholder="예: 20260902"
           >
           <small class="muted">연월일 숫자 8자리를 입력해 주세요. 예: 20260902</small>
