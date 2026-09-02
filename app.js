@@ -425,6 +425,10 @@ function normalizeBirthdayDigits(value) {
   return digits.slice(0, 4) + "-" + digits.slice(4, 6) + "-" + digits.slice(6, 8);
 }
 
+function normalizeCompactDate(value) {
+  return normalizeBirthdayDigits(value);
+}
+
 async function saveMyProfile() {
   const name = document.getElementById("profileName").value.trim();
   const phone = document.getElementById("profilePhone").value.trim();
@@ -1339,9 +1343,13 @@ async function newRecordingForm() {
 
           <input
             id="consultationDate"
-            type="date"
-            value="${today}"
+            type="text"
+            inputmode="numeric"
+            maxlength="8"
+            value="${today.replaceAll("-", "")}"
+            placeholder="예: 20260902"
           >
+          <small class="muted">연월일 숫자 8자리를 입력해 주세요. 예: 20260902</small>
         </div>
 
         <div class="field">
@@ -1423,7 +1431,7 @@ async function newRecordingForm() {
 
 async function saveRecording() {
   const consultationDate =
-    document.getElementById("consultationDate").value;
+    normalizeCompactDate(document.getElementById("consultationDate").value);
 
   const shortTitle =
     document.getElementById("shortTitle").value.trim();
@@ -1443,7 +1451,7 @@ async function saveRecording() {
     );
 
   if (!consultationDate) {
-    setMsg("상담 날짜를 선택해 주세요.");
+    setMsg("상담 날짜 8자리를 정확히 입력해 주세요. 예: 20260902");
     return;
   }
 
@@ -1858,9 +1866,13 @@ async function editRecordingForm(recordingId) {
 
           <input
             id="editConsultationDate"
-            type="date"
-            value="${escapeHtml(recording.consultation_date)}"
+            type="text"
+            inputmode="numeric"
+            maxlength="8"
+            value="${escapeHtml(String(recording.consultation_date || "").replace(/\\D/g, ""))}"
+            placeholder="예: 20260902"
           >
+          <small class="muted">연월일 숫자 8자리를 입력해 주세요. 예: 20260902</small>
         </div>
 
         <div class="field">
@@ -1929,9 +1941,11 @@ async function editRecordingForm(recordingId) {
 
 async function updateRecording(recordingId) {
   const consultationDate =
-    document
-      .getElementById("editConsultationDate")
-      .value;
+    normalizeCompactDate(
+      document
+        .getElementById("editConsultationDate")
+        .value
+    );
 
   const shortTitle =
     document
@@ -1958,7 +1972,7 @@ async function updateRecording(recordingId) {
       .trim();
 
   if (!consultationDate) {
-    setMsg("상담 날짜를 선택해 주세요.");
+    setMsg("상담 날짜 8자리를 정확히 입력해 주세요. 예: 20260902");
     return;
   }
 
