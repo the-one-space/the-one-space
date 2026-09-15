@@ -4,6 +4,38 @@
 alter table public.profiles
 add column if not exists team_no integer;
 
+alter table public.contacts
+add column if not exists team_no integer;
+
+-- 예전 1~5팀 제한이 남아 있으면 제거
+do $
+declare
+  constraint_row record;
+begin
+  for constraint_row in
+    select conrelid::regclass as table_name, conname
+    from pg_constraint
+    where contype = 'c'
+      and conrelid in ('public.profiles'::regclass, 'public.contacts'::regclass)
+      and pg_get_constraintdef(oid) ilike '%team_no%'
+  loop
+    execute format(
+      'alter table %s drop constraint %I',
+      constraint_row.table_name,
+      constraint_row.conname
+    );
+  end loop;
+end;
+$;
+
+alter table public.profiles
+add constraint profiles_team_no_1_to_6_check
+check (team_no is null or team_no between 1 and 6);
+
+alter table public.contacts
+add constraint contacts_team_no_1_to_6_check
+check (team_no is null or team_no between 1 and 6);
+
 create or replace function public.assign_signup_team()
 returns trigger
 language plpgsql
