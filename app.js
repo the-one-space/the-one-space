@@ -2320,11 +2320,11 @@ async function adminPage() {
 
 
 async function editUserTeam(userId, userName, currentTeam) {
-  const value = prompt(userName + "님의 소속 팀 번호를 입력해 주세요. (1~5)", currentTeam || "");
+  const value = prompt(userName + "님의 소속 팀 번호를 입력해 주세요. (1~6)", currentTeam || "");
   if (value === null) return;
   const teamNo = Number(value.trim());
-  if (![1, 2, 3, 4, 5].includes(teamNo)) {
-    alert("소속 팀은 1부터 5까지의 숫자로 입력해 주세요.");
+  if (![1, 2, 3, 4, 5, 6].includes(teamNo)) {
+    alert("소속 팀은 1부터 6까지의 숫자로 입력해 주세요.");
     return;
   }
   const { error } = await client.from("profiles").update({ team_no: teamNo }).eq("id", userId);
@@ -2393,7 +2393,7 @@ async function changeUserStatus(
   if (newStatus === "approved") {
     const teamSelect = document.getElementById("pendingTeam-" + userId);
     const teamNo = Number(teamSelect?.value || 0);
-    if (![1, 2, 3, 4, 5].includes(teamNo)) {
+    if (![1, 2, 3, 4, 5, 6].includes(teamNo)) {
       alert("승인 전에 소속 팀을 선택해 주세요.");
       return;
     }
@@ -3675,7 +3675,7 @@ function contactPositionRank(position) {
 
 function teamLabel(teamNo) {
   const value = Number(teamNo);
-  return value >= 1 && value <= 5 ? value + "팀" : "팀 미지정";
+  return value >= 1 && value <= 6 ? value + "팀" : "팀 미지정";
 }
 
 function teamSelectOptions(selectedValue, includeUnassigned = true) {
@@ -3683,7 +3683,7 @@ function teamSelectOptions(selectedValue, includeUnassigned = true) {
   const options = includeUnassigned
     ? `<option value="">팀 미지정</option>`
     : `<option value="">소속 팀 선택</option>`;
-  return options + [1, 2, 3, 4, 5]
+  return options + [1, 2, 3, 4, 5, 6]
     .map(teamNo => `<option value="${teamNo}" ${selected === teamNo ? "selected" : ""}>${teamNo}팀</option>`)
     .join("");
 }
@@ -3732,7 +3732,7 @@ async function contactsPage() {
     ? `<div class="contact-grid contact-team-section" data-team-section="">${unassigned.map(contactCard).join("")}</div>`
     : "";
 
-  const teamSections = [1, 2, 3, 4, 5].map(teamNo => {
+  const teamSections = [1, 2, 3, 4, 5, 6].map(teamNo => {
     const members = contactDirectoryCache.filter(item => Number(item.team_no) === teamNo);
     return `
       <section class="contact-team-section" data-team-section="${teamNo}">
@@ -3744,7 +3744,7 @@ async function contactsPage() {
       </section>`;
   }).join("");
 
-  const teamSummary = [1, 2, 3, 4, 5].map(teamNo => {
+  const teamSummary = [1, 2, 3, 4, 5, 6].map(teamNo => {
     const count = contactDirectoryCache.filter(item => Number(item.team_no) === teamNo).length;
     return `<span>${teamNo}팀 <b>${count}명</b></span>`;
   }).join("");
