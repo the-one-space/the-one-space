@@ -1,9 +1,9 @@
-const CACHE_NAME = "the-one-space-v40";
+const CACHE_NAME = "the-one-space-v41";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./style.css?v=47",
-  "./app.js?v=61",
+  "./app.js?v=62",
   "./install-helper.js?v=2",
   "./manifest.json",
   "./icon-192.png",
