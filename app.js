@@ -290,6 +290,19 @@ function signupForm() {
         </select>
       </div>
 
+      <div class="field">
+        <label>소속 팀장</label>
+        <select id="teamNo">
+          <option value="">소속 팀장을 선택해 주세요</option>
+          <option value="1">김병석 (1팀)</option>
+          <option value="2">최나정 (2팀)</option>
+          <option value="3">김하나 (3팀)</option>
+          <option value="4">한송이 (4팀)</option>
+          <option value="5">최서아 (5팀)</option>
+          <option value="6">대표자 없음 (6팀)</option>
+        </select>
+      </div>
+
       <button class="btn" onclick="signup()">
         가입 신청
       </button>
@@ -551,6 +564,9 @@ async function signup() {
   const positionValue =
     document.getElementById("position").value;
 
+  const teamNoValue =
+    Number(document.getElementById("teamNo").value || 0);
+
   if (!nameValue || !emailValue || !pwValue || !phoneValue) {
     setMsg("이름, 이메일, 비밀번호, 전화번호를 모두 입력해 주세요.");
     return;
@@ -558,6 +574,11 @@ async function signup() {
 
   if (!birthdayValue) {
     setMsg("생년월일 8자리를 정확히 입력해 주세요. 예: 19920319");
+    return;
+  }
+
+  if (![1, 2, 3, 4, 5, 6].includes(teamNoValue)) {
+    setMsg("소속 팀장을 선택해 주세요.");
     return;
   }
 
@@ -571,7 +592,8 @@ async function signup() {
           name: nameValue,
           position: positionValue,
           phone: phoneValue,
-          birthday: birthdayValue
+          birthday: birthdayValue,
+          team_no: teamNoValue
         }
       }
     });
