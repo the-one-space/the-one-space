@@ -2140,9 +2140,9 @@ async function restoreTrashItem(type,id){
 
 async function permanentlyDeleteTrashItem(type,id,automatic=false){
   if(!automatic&&!confirm("영구 삭제하면 복구할 수 없습니다.\\n정말 삭제하시겠습니까?"))return false;
-  if(type==="recording"||type==="resource"){
-    const table=type==="recording"?"recording_files":"resource_files";
-    const key=type==="recording"?"recording_id":"resource_id";
+  if(type==="recording"||type==="resource"||type==="notice"){
+    const table=type==="recording"?"recording_files":type==="resource"?"resource_files":"notice_files";
+    const key=type==="recording"?"recording_id":type==="resource"?"resource_id":"notice_id";
     const bucket=type==="recording"?"recordings":"resources";
     const {data,error}=await client.from(table).select("file_path").eq(key,id);
     if(error){if(!automatic)alert("첨부 파일 확인 실패\\n"+error.message);return false}
@@ -2669,13 +2669,81 @@ async function noticesPage() {
 
 
 // =====================================================
+// 공지 첨부파일
+// =====================================================
+
+async function uploadNoticeAttachments(noticeId, files, userId, progressLabel = "파일 업로드 중") {
+  const uploaded = [];
+
+  for (let index = 0; index < files.length; index += 1) {
+    const file = files[index];
+    setMsg(`${progressLabel}... ${index + 1} / ${files.length}`);
+    const extension = file.name.includes(".")
+      ? "." + file.name.split(".").pop().toLowerCase().replace(/[^a-z0-9]/g, "")
+      : "";
+    const filePath = `${userId}/notices/${noticeId}/${crypto.randomUUID()}${extension}`;
+    const { data, error } = await client.storage.from("resources").upload(filePath, file, {
+      cacheControl: "3600",
+      upsert: false,
+      contentType: file.type || "application/octet-stream"
+    });
+
+    if (error) {
+      if (uploaded.length) {
+        await client.storage.from("resources").remove(uploaded.map(item => item.file_path));
+      }
+      throw new Error(file.name + ": " + error.message);
+    }
+
+    uploaded.push({
+      file_name: file.name,
+      file_path: data.path,
+      file_type: file.type || null,
+      file_size: file.size
+    });
+  }
+
+  if (!uploaded.length) return 0;
+
+  const { error: fileError } = await client.from("notice_files").insert(
+    uploaded.map(file => ({
+      notice_id: noticeId,
+      uploaded_by: userId,
+      ...file
+    }))
+  );
+
+  if (fileError) {
+    await client.storage.from("resources").remove(uploaded.map(item => item.file_path));
+    throw new Error(fileError.message);
+  }
+
+  return uploaded.length;
+}
+
+async function openNoticeFile(filePath) {
+  const { data, error } = await client.storage
+    .from("resources")
+    .createSignedUrl(filePath, 60 * 10, { download: true });
+
+  if (error || !data?.signedUrl) {
+    alert("파일을 열지 못했습니다.\n" + (error?.message || ""));
+    return;
+  }
+
+  window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+}
+
+
+// =====================================================
 // 새 공지 작성
 // =====================================================
 
 async function newNoticeForm() {
+  const user = await getCurrentUser();
   const profile = await getCurrentProfile();
 
-  if (!canManageNotices(profile)) {
+  if (!user || !canManageNotices(profile)) {
     alert("공지 작성 권한이 없습니다.");
     return;
   }
@@ -2742,6 +2810,13 @@ async function newNoticeForm() {
         </div>
 
 
+        <div class="field">
+          <label>첨부 파일 (선택)</label>
+          <input id="noticeFiles" type="file" multiple>
+          <p class="muted">사진·PDF·문서 등 여러 파일을 한 번에 선택할 수 있습니다.</p>
+        </div>
+
+
         <div
           class="field"
           style="display:flex;align-items:center;gap:10px;"
@@ -2802,6 +2877,9 @@ async function saveNotice() {
       .getElementById("noticePinned")
       .checked;
 
+  const files =
+    Array.from(document.getElementById("noticeFiles").files);
+
   if (!title) {
     setMsg("공지 제목을 입력해 주세요.");
     return;
@@ -2826,10 +2904,13 @@ async function saveNotice() {
   button.disabled = true;
   button.textContent = "등록 중...";
 
+  const noticeId = crypto.randomUUID();
+
   const { error } =
     await client
       .from("notices")
       .insert({
+        id: noticeId,
         title: title,
         content: content,
         is_pinned: isPinned,
@@ -2839,15 +2920,22 @@ async function saveNotice() {
   if (error) {
     button.disabled = false;
     button.textContent = "공지 등록";
-
-    setMsg(
-      "공지 등록 실패: " +
-      error.message
-    );
+    setMsg("공지 등록 실패: " + error.message);
     return;
   }
 
-  alert("공지사항이 등록되었습니다.");
+  try {
+    const attachmentCount = await uploadNoticeAttachments(noticeId, files, user.id);
+    alert(attachmentCount
+      ? `공지사항이 등록되었습니다.\n첨부파일 ${attachmentCount}개가 저장되었습니다.`
+      : "공지사항이 등록되었습니다.");
+  } catch (attachmentError) {
+    await client.from("notices").delete().eq("id", noticeId);
+    button.disabled = false;
+    button.textContent = "공지 등록";
+    setMsg("첨부파일 업로드 실패:<br>" + escapeHtml(attachmentError.message));
+    return;
+  }
 
   await noticesPage();
 }
@@ -2865,19 +2953,34 @@ async function noticeDetail(noticeId) {
     return;
   }
 
-  const { data: notice, error } =
-    await client
-      .from("notices")
-      .select("*")
-      .eq("id", noticeId)
-      .is("deleted_at", null)
-      .single();
+  const [
+    { data: notice, error },
+    { data: noticeFiles, error: noticeFilesError }
+  ] = await Promise.all([
+    client.from("notices").select("*").eq("id", noticeId).is("deleted_at", null).single(),
+    client.from("notice_files").select("*").eq("notice_id", noticeId).order("created_at", { ascending: true })
+  ]);
 
   if (error || !notice) {
     alert("공지사항을 불러오지 못했습니다.");
     await noticesPage();
     return;
   }
+
+  if (noticeFilesError) {
+    alert("첨부파일 목록을 불러오지 못했습니다.\n" + noticeFilesError.message);
+    return;
+  }
+
+  const noticeFileRows = (noticeFiles || []).map(file => `
+    <div class="file-row">
+      <div class="file-name">
+        <b>${escapeHtml(file.file_name)}</b>
+        <div class="muted">${formatFileSize(file.file_size)}</div>
+      </div>
+      <button class="btn" onclick="openNoticeFile('${file.file_path}')">열기 / 다운로드</button>
+    </div>`
+  ).join("") || `<p class="muted">첨부된 파일이 없습니다.</p>`;
 
   const manageButtons =
     canManageNotices(profile)
@@ -2953,6 +3056,11 @@ ${escapeHtml(notice.content)}
 
       </div>
 
+      <h2 style="margin-top:32px;">첨부 파일 (${noticeFiles.length})</h2>
+      <div class="card">
+        ${noticeFileRows}
+      </div>
+
     </div>
   `;
 }
@@ -2970,17 +3078,27 @@ async function editNoticeForm(noticeId) {
     return;
   }
 
-  const { data: notice, error } =
-    await client
-      .from("notices")
-      .select("*")
-      .eq("id", noticeId)
-      .single();
+  const [
+    { data: notice, error },
+    { data: existingNoticeFiles, error: existingNoticeFilesError }
+  ] = await Promise.all([
+    client.from("notices").select("*").eq("id", noticeId).single(),
+    client.from("notice_files").select("*").eq("notice_id", noticeId).order("created_at", { ascending: true })
+  ]);
 
   if (error || !notice) {
     alert("공지사항을 불러오지 못했습니다.");
     return;
   }
+
+  if (existingNoticeFilesError) {
+    alert("첨부파일 목록을 불러오지 못했습니다.\n" + existingNoticeFilesError.message);
+    return;
+  }
+
+  const existingFileNames = (existingNoticeFiles || [])
+    .map(file => escapeHtml(file.file_name))
+    .join(", ");
 
   app.innerHTML = `
     <div class="wrap">
@@ -3040,6 +3158,13 @@ async function editNoticeForm(noticeId) {
             style="width:100%;box-sizing:border-box;"
           >${escapeHtml(notice.content)}</textarea>
 
+        </div>
+
+
+        <div class="field">
+          <label>새 첨부 파일 추가 (선택)</label>
+          <input id="editNoticeFiles" type="file" multiple>
+          <p class="muted">${existingFileNames ? "현재 첨부: " + existingFileNames : "현재 첨부된 파일이 없습니다."}</p>
         </div>
 
 
@@ -3103,6 +3228,9 @@ async function updateNotice(noticeId) {
       .getElementById("editNoticePinned")
       .checked;
 
+  const files =
+    Array.from(document.getElementById("editNoticeFiles").files);
+
   if (!title) {
     setMsg("공지 제목을 입력해 주세요.");
     return;
@@ -3139,7 +3267,20 @@ async function updateNotice(noticeId) {
     return;
   }
 
-  alert("공지사항이 수정되었습니다.");
+  try {
+    const attachmentCount = await uploadNoticeAttachments(
+      noticeId,
+      files,
+      user.id,
+      "새 첨부파일 업로드 중"
+    );
+    alert(attachmentCount
+      ? `공지사항이 수정되고 첨부파일 ${attachmentCount}개가 추가되었습니다.`
+      : "공지사항이 수정되었습니다.");
+  } catch (attachmentError) {
+    setMsg("공지 내용은 수정됐지만 첨부파일 추가에 실패했습니다:<br>" + escapeHtml(attachmentError.message));
+    return;
+  }
 
   await noticeDetail(noticeId);
 }
