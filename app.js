@@ -299,6 +299,7 @@ function signupForm() {
           <option value="3">김하나 (3팀)</option>
           <option value="4">한송이 (4팀)</option>
           <option value="5">최서아 (5팀)</option>
+          <option value="6">소속 팀장 없음 (6팀)</option>
         </select>
       </div>
 
@@ -576,7 +577,7 @@ async function signup() {
     return;
   }
 
-  if (![1, 2, 3, 4, 5].includes(teamNoValue)) {
+  if (![1, 2, 3, 4, 5, 6].includes(teamNoValue)) {
     setMsg("소속 팀장을 선택해 주세요.");
     return;
   }
