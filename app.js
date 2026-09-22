@@ -991,7 +991,7 @@ async function loadDashboardSearchData(force = false) {
       client.from("recording_files")
         .select("recording_id,file_name"),
       client.from("resources")
-        .select("id,title,description,category,uploader_name")
+        .select("id,title,description,category,uploader_name,owner_name")
         .is("deleted_at", null),
       client.from("notices")
         .select("id,title,content,is_pinned")
@@ -1022,7 +1022,7 @@ async function loadDashboardSearchData(force = false) {
       resources: (resourcesResult.data || []).map(item => ({
         ...item,
         search_text: normalizeGlobalSearchText([
-          item.title, item.description, item.category, item.uploader_name
+          item.title, item.description, item.category, item.owner_name, item.uploader_name
         ].join(" "))
       })),
       notices: (noticesResult.data || []).map(item => ({
@@ -1170,7 +1170,7 @@ async function runDashboardLocalSearch(query, sequence) {
     section("자료실", resources, item => `
       <button class="dashboard-global-result-row" onclick="resourceDetail('${item.id}')">
         <span>▰</span><div><b>${escapeHtml(item.title)}</b>
-        <small>${escapeHtml(item.category || "")} · ${escapeHtml(item.uploader_name || "")}</small></div>
+        <small>${escapeHtml(item.category || "")} · 자료 제공자 ${escapeHtml(item.owner_name || item.uploader_name || "")}</small></div>
       </button>`) +
     section("공지사항", notices, item => `
       <button class="dashboard-global-result-row" onclick="noticeDetail('${item.id}')">
@@ -4135,7 +4135,7 @@ async function resourcesPage() {
     const tags = (item.tags || []).map(tag =>
       `<span class="tag">#${escapeHtml(tag)}</span>`
     ).join("");
-    const searchText = [item.title, item.description, item.category, ...(item.tags || []), item.uploader_name]
+    const searchText = [item.title, item.description, item.category, ...(item.tags || []), item.owner_name, item.uploader_name]
       .join(" ").toLowerCase();
 
     return `
@@ -4144,7 +4144,7 @@ async function resourcesPage() {
         <div class="muted">${escapeHtml(item.category)} · ${new Date(item.created_at).toLocaleDateString("ko-KR")}</div>
         <h3>${escapeHtml(item.title)}</h3>
         <p>${escapeHtml(item.description || "설명이 없습니다.")}</p>
-        <p style="margin-top:12px;">📎 ${(item.resource_files || []).length}개 · ${escapeHtml(item.uploader_name)}</p>
+        <p style="margin-top:12px;">📎 ${(item.resource_files || []).length}개 · 자료 제공자 <b>${escapeHtml(item.owner_name || item.uploader_name)}</b></p>
         <div>${tags}</div>
       </div>`;
   }).join("");
@@ -4162,7 +4162,7 @@ async function resourcesPage() {
         <button class="btn" onclick="newResourceForm()">+ 새 자료 등록</button>
       </section>
       <div class="toolbar resource-toolbar">
-        <input id="resourceSearch" type="search" placeholder="제목, 설명, 태그, 등록자 검색" oninput="filterResources()">
+        <input id="resourceSearch" type="search" placeholder="제목, 설명, 태그, 자료 제공자 검색" oninput="filterResources()">
         <div class="resource-category-tabs" aria-label="자료 카테고리">
           <button class="resource-category-btn active" data-category="" onclick="selectResourceCategory('', this)">전체</button>
           ${RESOURCE_CATEGORIES.map(category =>
@@ -4211,6 +4211,7 @@ async function newResourceForm() {
       <section class="hero"><div class="muted">NEW RESOURCE</div><h1>새 자료 등록</h1></section>
       <div class="auth" style="max-width:700px;">
         <div class="field"><label>제목</label><input id="resourceTitle" type="text" placeholder="자료 제목을 입력해 주세요."></div>
+        <div class="field"><label>자료 제공자 (실제 자료 주인)</label><input id="resourceOwnerName" type="text" placeholder="예: 김하나"></div>
         <div class="field"><label>설명</label><textarea id="resourceDescription" rows="5" placeholder="자료의 용도나 내용을 입력해 주세요."></textarea></div>
         <div class="field"><label>카테고리</label><select id="resourceCategory">${RESOURCE_CATEGORIES.map(category => `<option value="${category}">${category}</option>`).join("")}</select></div>
         <div class="field"><label>태그</label><input id="resourceTags" type="text" placeholder="쉼표로 구분 (예: 청약서, 고객관리)"></div>
@@ -4223,11 +4224,13 @@ async function newResourceForm() {
 
 async function saveResource() {
   const title = document.getElementById("resourceTitle").value.trim();
+  const ownerName = document.getElementById("resourceOwnerName").value.trim();
   const description = document.getElementById("resourceDescription").value.trim();
   const category = document.getElementById("resourceCategory").value;
   const tags = parseResourceTags(document.getElementById("resourceTags").value);
   const files = Array.from(document.getElementById("resourceFiles").files);
   if (!title) return setMsg("자료 제목을 입력해 주세요.");
+  if (!ownerName) return setMsg("실제 자료 주인 이름을 입력해 주세요.");
   if (!files.length) return setMsg("파일을 한 개 이상 선택해 주세요.");
 
   const user = await getCurrentUser();
@@ -4259,7 +4262,7 @@ async function saveResource() {
 
   const { error: resourceError } = await client.from("resources").insert({
     id: resourceId, title, description: description || null, category, tags,
-    uploaded_by: user.id, uploader_name: profile.name
+    owner_name: ownerName, uploaded_by: user.id, uploader_name: profile.name
   });
   if (resourceError) {
     await client.storage.from("resources").remove(uploaded.map(item => item.file_path));
@@ -4316,7 +4319,8 @@ async function resourceDetail(resourceId) {
       <section class="hero">
         <div class="muted">${escapeHtml(resource.category)} · ${new Date(resource.created_at).toLocaleString("ko-KR")}</div>
         <h1>${escapeHtml(resource.title)}</h1>
-        <p>등록자: ${escapeHtml(resource.uploader_name)}</p>
+        <p><b>자료 제공자:</b> ${escapeHtml(resource.owner_name || resource.uploader_name)}</p>
+        <p class="muted">등록자: ${escapeHtml(resource.uploader_name)}</p>
         <div>${(resource.tags || []).map(tag => `<span class="tag">#${escapeHtml(tag)}</span>`).join("")}</div>
       </section>
       <div class="card"><h3>자료 설명</h3><p style="white-space:pre-wrap;line-height:1.7;">${escapeHtml(resource.description || "등록된 설명이 없습니다.")}</p></div>
@@ -4344,6 +4348,7 @@ async function editResourceForm(resourceId) {
       <section class="hero"><div class="muted">EDIT RESOURCE</div><h1>자료 수정</h1></section>
       <div class="auth" style="max-width:700px;">
         <div class="field"><label>제목</label><input id="editResourceTitle" type="text" value="${escapeHtml(resource.title)}"></div>
+        <div class="field"><label>자료 제공자 (실제 자료 주인)</label><input id="editResourceOwnerName" type="text" value="${escapeHtml(resource.owner_name || resource.uploader_name)}"></div>
         <div class="field"><label>설명</label><textarea id="editResourceDescription" rows="5">${escapeHtml(resource.description || "")}</textarea></div>
         <div class="field"><label>카테고리</label><select id="editResourceCategory">${RESOURCE_CATEGORIES.map(category => `<option value="${category}" ${resource.category === category ? "selected" : ""}>${category}</option>`).join("")}</select></div>
         <div class="field"><label>태그</label><input id="editResourceTags" type="text" value="${escapeHtml((resource.tags || []).join(", "))}"></div>
@@ -4355,9 +4360,12 @@ async function editResourceForm(resourceId) {
 
 async function updateResource(resourceId) {
   const title = document.getElementById("editResourceTitle").value.trim();
+  const ownerName = document.getElementById("editResourceOwnerName").value.trim();
   if (!title) return setMsg("자료 제목을 입력해 주세요.");
+  if (!ownerName) return setMsg("실제 자료 주인 이름을 입력해 주세요.");
   const { error } = await client.from("resources").update({
     title,
+    owner_name: ownerName,
     description: document.getElementById("editResourceDescription").value.trim() || null,
     category: document.getElementById("editResourceCategory").value,
     tags: parseResourceTags(document.getElementById("editResourceTags").value),
