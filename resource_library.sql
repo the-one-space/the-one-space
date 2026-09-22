@@ -9,9 +9,20 @@ create table if not exists public.resources (
   tags text[] not null default '{}',
   uploaded_by uuid not null references auth.users(id) on delete cascade,
   uploader_name text not null,
+  owner_name text not null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.resources
+add column if not exists owner_name text;
+
+update public.resources
+set owner_name = uploader_name
+where owner_name is null or trim(owner_name) = '';
+
+alter table public.resources
+alter column owner_name set not null;
 
 create table if not exists public.resource_files (
   id uuid primary key default gen_random_uuid(),
